@@ -25,6 +25,18 @@ This file records what was taken from `oh-my-codex`, what was adapted, and what 
   Generated from the prompt catalog with OMX-only lines removed.
 - `.agents/skills/*`
   Rewritten as portable skills that assume native Codex behavior, not the OMX runtime.
+- `.devcontainer/**`
+  Added as a portable Codespaces bootstrap layer that avoids OMX-specific runtime assumptions.
+- `.github/copilot-instructions.md`
+  Added as a portable GitHub Copilot repository-wide instruction layer.
+- `.github/instructions/*.instructions.md`
+  Added as portable path-specific GitHub Copilot guidance for starter maintenance and downstream reuse.
+- `.github/agents/*.agent.md`
+  Added as lightweight GitHub Copilot custom agents for maintaining the portable pack.
+- `.github/hooks/**`
+  Added as a minimal local-only GitHub Copilot hook policy and audit layer.
+- `.github/workflows/copilot-setup-steps.yml`
+  Added as a portable GitHub Copilot cloud-agent bootstrap workflow.
 
 ## Deliberately excluded
 
@@ -47,3 +59,9 @@ This file records what was taken from `oh-my-codex`, what was adapted, and what 
 - Custom agents use `.codex/agents/`.
 - Prompt sources are preserved, but generated agent instructions are sanitized.
 - The starter favors native Codex subagents and plain repository-local files over runtime state machines.
+
+## Source-of-truth model
+
+- `portable-codex-starter/` is the canonical source of truth for the portable pack.
+- The starter is intended to be self-contained and copyable into other repositories without depending on OMX source-repo overlays.
+- Full pack installability is enforced with `npm run verify:kit` from inside `portable-codex-starter/`.

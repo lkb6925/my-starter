@@ -16,9 +16,7 @@ If your real goal is:
 
 then this folder is the thing you copy.
 
-This folder is the canonical deliverable inside the larger `oh-my-codex` source repo. If you only read one file, read this one.
-
-Inside the `oh-my-codex` source repository, this folder is also the source of truth for the shared portable `.devcontainer` and `.github` companion layer. The source repo mirrors the shared subset back to its own root-level files.
+This folder is the canonical deliverable. If you only read one file, read this one.
 
 ## What This Actually Gives You
 
@@ -393,18 +391,6 @@ If you only want to validate the core Codex layer:
 
 ```bash
 node scripts/doctor.mjs --target /path/to/your-project --core-only
-```
-
-If you are maintaining this starter inside the `oh-my-codex` source repository, the shared root-level companion files are mirrored from here with:
-
-```bash
-npm run sync:portable-layer
-```
-
-To check whether the root-level shared files have drifted:
-
-```bash
-npm run check:portable-layer
 ```
 
 ## Quality Rules Built Into This Pack
