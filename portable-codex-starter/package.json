@@ -1,0 +1,9 @@
+{
+  "name": "portable-codex-starter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:agents": "node scripts/generate-agents.mjs",
+    "install:kit": "node scripts/install.mjs"
+  }
+}
