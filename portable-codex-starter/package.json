@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "doctor:kit": "node scripts/doctor.mjs",
     "generate:agents": "node scripts/generate-agents.mjs",
-    "install:kit": "node scripts/install.mjs"
+    "install:kit": "node scripts/install.mjs",
+    "verify:kit": "node scripts/verify.mjs"
   }
 }

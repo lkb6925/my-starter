@@ -10,6 +10,7 @@ const args = parseArgs(process.argv.slice(2));
 const target = resolve(args.target || process.cwd());
 const skillsRoot = args["skills-root"] || ".agents";
 const withConfig = Boolean(args["with-config"]);
+const coreOnly = Boolean(args["core-only"]);
 
 await ensureDir(target);
 await copyInto(join(packRoot, "AGENTS.md"), join(target, "AGENTS.md"));
@@ -38,7 +39,23 @@ if (withConfig) {
   }
 }
 
-console.log(`Installed portable starter into ${target}`);
+if (!coreOnly) {
+  await copyTree(join(packRoot, ".devcontainer"), join(target, ".devcontainer"));
+  await copyInto(
+    join(packRoot, ".github", "copilot-instructions.md"),
+    join(target, ".github", "copilot-instructions.md"),
+  );
+  await copyTree(join(packRoot, ".github", "instructions"), join(target, ".github", "instructions"));
+  await copyTree(join(packRoot, ".github", "agents"), join(target, ".github", "agents"));
+  await copyTree(join(packRoot, ".github", "hooks"), join(target, ".github", "hooks"));
+  await copyInto(
+    join(packRoot, ".github", "workflows", "copilot-setup-steps.yml"),
+    join(target, ".github", "workflows", "copilot-setup-steps.yml"),
+  );
+}
+
+const modeLabel = coreOnly ? "core-only portable starter" : "full portable starter";
+console.log(`Installed ${modeLabel} into ${target}`);
 
 function parseArgs(argv) {
   const parsed = {};

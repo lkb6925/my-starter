@@ -106,6 +106,25 @@ $team 3:executor "execute the approved plan in parallel"
 
 Use `$team` when the approved plan needs coordinated parallel work, or `$ralph` when one persistent owner should keep pushing to completion.
 
+## Codespaces and GitHub agent layers
+
+This repository now also includes repo-local AI support layers for GitHub Codespaces, GitHub Copilot, and the Codex workflow you run inside VS Code:
+
+- `.devcontainer/devcontainer.json` bootstraps a repeatable Codespaces environment with Node, Rust, GitHub CLI, recommended secrets, and first-open files.
+- `.github/copilot-instructions.md` defines repository-wide Copilot guidance.
+- `.github/instructions/*.instructions.md` adds path-specific rules for TypeScript, Rust, automation, guidance assets, and the portable starter pack.
+- `.github/agents/*.agent.md` provides focused GitHub Copilot custom agents for planning, implementation, review, automation, and portable-pack maintenance.
+- `.github/hooks/*.json` adds lightweight GitHub Copilot hook policy and audit logging.
+- `.github/workflows/copilot-setup-steps.yml` pre-installs the main project dependencies for GitHub Copilot cloud agent sessions.
+
+If your goal is personal-use repo portability for Codespaces + VS Code + Codex without installing OMX globally, the copy-pasteable pack remains [`portable-codex-starter/`](./portable-codex-starter/README.md).
+
+The maintenance rule is now explicit:
+
+- `portable-codex-starter/` is the source of truth for the shared portable `.devcontainer` and `.github` companion layer
+- this source repo keeps repo-specific Copilot instructions and agent overlays at the root
+- the shared root-level files are mirrored from the starter with `npm run sync:portable-layer`
+
 ## A simple mental model
 
 OMX does **not** replace Codex.
