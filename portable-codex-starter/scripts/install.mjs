@@ -15,6 +15,8 @@ const coreOnly = Boolean(args["core-only"]);
 await ensureDir(target);
 await copyInto(join(packRoot, "AGENTS.md"), join(target, "AGENTS.md"));
 await copyTree(join(packRoot, ".codex", "agents"), join(target, ".codex", "agents"));
+await copyInto(join(packRoot, "README.md"), join(target, ".codex", "starter-docs", "README.md"));
+await copyTree(join(packRoot, "docs"), join(target, ".codex", "starter-docs", "docs"));
 
 if (skillsRoot === ".agents" || skillsRoot === "both") {
   await copyTree(join(packRoot, ".agents", "skills"), join(target, ".agents", "skills"));
@@ -28,6 +30,10 @@ if (withConfig) {
   await copyInto(
     join(packRoot, ".codex", "config.toml.example"),
     join(target, ".codex", "config.toml.example"),
+  );
+  await copyInto(
+    join(packRoot, ".codex", "mcp-servers.example.toml"),
+    join(target, ".codex", "mcp-servers.example.toml"),
   );
   try {
     await stat(join(target, ".codex", "config.toml"));
@@ -47,11 +53,9 @@ if (!coreOnly) {
   );
   await copyTree(join(packRoot, ".github", "instructions"), join(target, ".github", "instructions"));
   await copyTree(join(packRoot, ".github", "agents"), join(target, ".github", "agents"));
+  await copyTree(join(packRoot, ".github", "skills"), join(target, ".github", "skills"));
   await copyTree(join(packRoot, ".github", "hooks"), join(target, ".github", "hooks"));
-  await copyInto(
-    join(packRoot, ".github", "workflows", "copilot-setup-steps.yml"),
-    join(target, ".github", "workflows", "copilot-setup-steps.yml"),
-  );
+  await copyTree(join(packRoot, ".github", "workflows"), join(target, ".github", "workflows"));
 }
 
 const modeLabel = coreOnly ? "core-only portable starter" : "full portable starter";
@@ -62,6 +66,13 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (!arg.startsWith("--")) continue;
+    const inlineEquals = arg.indexOf("=");
+    if (inlineEquals !== -1) {
+      const key = arg.slice(2, inlineEquals);
+      const value = arg.slice(inlineEquals + 1);
+      parsed[key] = value === "" ? true : value;
+      continue;
+    }
     const key = arg.slice(2);
     const next = argv[index + 1];
     if (!next || next.startsWith("--")) {

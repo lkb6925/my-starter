@@ -20,9 +20,19 @@ This file records what was taken from `oh-my-codex`, what was adapted, and what 
 - `AGENTS.md`
   Rewritten to remove OMX CLI, tmux, runtime overlays, `.omx/` state, and OMX-only workflow commands.
 - `.codex/config.toml`
-  Replaced OMX-managed config generation with safe portable defaults only.
+  Replaced OMX-managed config generation with safe portable defaults plus small native subagent limits.
+- `.codex/mcp-servers.example.toml`
+  Added as a safe MCP template layer so external context can be enabled intentionally instead of being hardwired.
 - `.codex/agents/*.toml`
   Generated from the prompt catalog with OMX-only lines removed.
+- `prompts/explore-harness.md`
+  Reinterpreted as a shell-first, read-only Codex agent instead of an OMX command harness.
+- `prompts/qa-tester.md`
+  Rewritten from a tmux-dependent runtime tester into a shell-driven smoke/integration verifier that works in Codespaces and plain Codex sessions.
+- `prompts/team-executor.md`
+  Rewritten from an OMX worker surface into a bounded native Codex execution lane.
+- `prompts/team-orchestrator.md`
+  Rewritten from OMX team coordination guidance into a native Codex subagent orchestration role.
 - `.agents/skills/*`
   Rewritten as portable skills that assume native Codex behavior, not the OMX runtime.
 - `.devcontainer/**`
@@ -33,10 +43,14 @@ This file records what was taken from `oh-my-codex`, what was adapted, and what 
   Added as portable path-specific GitHub Copilot guidance for starter maintenance and downstream reuse.
 - `.github/agents/*.agent.md`
   Added as lightweight GitHub Copilot custom agents for maintaining the portable pack.
+- `.github/skills/*`
+  Added as portable GitHub Copilot skill playbooks for repeated testing, deployment, incident, and security procedures.
 - `.github/hooks/**`
   Added as a minimal local-only GitHub Copilot hook policy and audit layer.
 - `.github/workflows/copilot-setup-steps.yml`
   Added as a portable GitHub Copilot cloud-agent bootstrap workflow.
+- `.github/workflows/portable-quality-gate.yml`
+  Added as a portable PR quality gate workflow that validates common scripts and starter scaffolding.
 
 ## Deliberately excluded
 
@@ -59,6 +73,7 @@ This file records what was taken from `oh-my-codex`, what was adapted, and what 
 - Custom agents use `.codex/agents/`.
 - Prompt sources are preserved, but generated agent instructions are sanitized.
 - The starter favors native Codex subagents and plain repository-local files over runtime state machines.
+- Some formerly OMX-only roles are kept as portable approximations rather than exact runtime clones.
 
 ## Source-of-truth model
 

@@ -5,42 +5,83 @@ import { join, resolve } from "node:path";
 const args = parseArgs(process.argv.slice(2));
 const target = resolve(args.target || process.cwd());
 const coreOnly = Boolean(args["core-only"]);
+const skillsRoot = args["skills-root"] || ".agents";
 
 const expected = {
-  agents: 29,
+  agents: 33,
   skills: 13,
   githubAgents: 5,
   githubInstructions: 5,
+  githubSkills: 4,
 };
 
 const checks = [];
 
 checks.push(checkExists("AGENTS.md", join(target, "AGENTS.md")));
 checks.push(checkExists(".codex/agents", join(target, ".codex", "agents")));
-checks.push(checkExists(".agents/skills", join(target, ".agents", "skills")));
 
 const agentsPath = join(target, ".codex", "agents");
-const skillsPath = join(target, ".agents", "skills");
+const agentsSkillsPath = join(target, ".agents", "skills");
+const codexSkillsPath = join(target, ".codex", "skills");
 const configPath = join(target, ".codex", "config.toml");
 const configExamplePath = join(target, ".codex", "config.toml.example");
+const mcpExamplePath = join(target, ".codex", "mcp-servers.example.toml");
+const starterDocsReadmePath = join(target, ".codex", "starter-docs", "README.md");
+const starterDocsAutomationPath = join(target, ".codex", "starter-docs", "docs", "automation-playbook.md");
 const githubAgentsPath = join(target, ".github", "agents");
 const githubInstructionsPath = join(target, ".github", "instructions");
+const githubSkillsPath = join(target, ".github", "skills");
 
 const agentCount = await countAgentFiles(agentsPath);
-const skillCount = await countSkillDirectories(skillsPath);
+const agentsSkillCount = await countSkillDirectories(agentsSkillsPath);
+const codexSkillCount = await countSkillDirectories(codexSkillsPath);
+
+if (skillsRoot === ".agents") {
+  checks.push(checkExists(".agents/skills", agentsSkillsPath));
+  checks.push({
+    name: "skill count",
+    ok: agentsSkillCount === expected.skills,
+    detail: `${agentsSkillCount}/${expected.skills} in .agents/skills`,
+  });
+} else if (skillsRoot === ".codex") {
+  checks.push(checkExists(".codex/skills", codexSkillsPath));
+  checks.push({
+    name: "skill count",
+    ok: codexSkillCount === expected.skills,
+    detail: `${codexSkillCount}/${expected.skills} in .codex/skills`,
+  });
+} else if (skillsRoot === "both") {
+  checks.push(checkExists(".agents/skills", agentsSkillsPath));
+  checks.push(checkExists(".codex/skills", codexSkillsPath));
+  checks.push({
+    name: "skill count (.agents)",
+    ok: agentsSkillCount === expected.skills,
+    detail: `${agentsSkillCount}/${expected.skills}`,
+  });
+  checks.push({
+    name: "skill count (.codex)",
+    ok: codexSkillCount === expected.skills,
+    detail: `${codexSkillCount}/${expected.skills}`,
+  });
+} else {
+  checks.push({
+    name: "skills-root",
+    ok: false,
+    optional: false,
+    detail: `unsupported value: ${skillsRoot}`,
+  });
+}
 
 checks.push({
   name: "agent count",
   ok: agentCount === expected.agents,
   detail: `${agentCount}/${expected.agents}`,
 });
-checks.push({
-  name: "skill count",
-  ok: skillCount === expected.skills,
-  detail: `${skillCount}/${expected.skills}`,
-});
 checks.push(checkOptional("config.toml", configPath));
 checks.push(checkOptional("config.toml.example", configExamplePath));
+checks.push(checkOptional("mcp-servers.example.toml", mcpExamplePath));
+checks.push(checkOptional("starter-docs/README.md", starterDocsReadmePath));
+checks.push(checkOptional("starter-docs/docs/automation-playbook.md", starterDocsAutomationPath));
 
 if (!coreOnly) {
   checks.push(checkExists(".devcontainer/devcontainer.json", join(target, ".devcontainer", "devcontainer.json")));
@@ -55,6 +96,7 @@ if (!coreOnly) {
   );
   checks.push(checkExists(".github/agents", githubAgentsPath));
   checks.push(checkExists(".github/instructions", githubInstructionsPath));
+  checks.push(checkExists(".github/skills", githubSkillsPath));
   checks.push(checkExists(".github/hooks", join(target, ".github", "hooks")));
   checks.push(
     checkExists(
@@ -62,9 +104,16 @@ if (!coreOnly) {
       join(target, ".github", "workflows", "copilot-setup-steps.yml"),
     ),
   );
+  checks.push(
+    checkExists(
+      ".github/workflows/portable-quality-gate.yml",
+      join(target, ".github", "workflows", "portable-quality-gate.yml"),
+    ),
+  );
 
   const githubAgentCount = await countMarkdownFiles(githubAgentsPath, ".agent.md");
   const githubInstructionCount = await countMarkdownFiles(githubInstructionsPath, ".instructions.md");
+  const githubSkillCount = await countSkillDirectories(githubSkillsPath);
 
   checks.push({
     name: "GitHub agent count",
@@ -75,6 +124,11 @@ if (!coreOnly) {
     name: "GitHub instruction count",
     ok: githubInstructionCount === expected.githubInstructions,
     detail: `${githubInstructionCount}/${expected.githubInstructions}`,
+  });
+  checks.push({
+    name: "GitHub skill count",
+    ok: githubSkillCount === expected.githubSkills,
+    detail: `${githubSkillCount}/${expected.githubSkills}`,
   });
 }
 
@@ -102,6 +156,13 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (!arg.startsWith("--")) continue;
+    const inlineEquals = arg.indexOf("=");
+    if (inlineEquals !== -1) {
+      const key = arg.slice(2, inlineEquals);
+      const value = arg.slice(inlineEquals + 1);
+      parsed[key] = value === "" ? true : value;
+      continue;
+    }
     const key = arg.slice(2);
     const next = argv[index + 1];
     if (!next || next.startsWith("--")) {

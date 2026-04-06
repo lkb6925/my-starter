@@ -13,6 +13,7 @@ This repository is using the Portable Codex Starter personal-use pack derived fr
 - `AGENTS.md` sets Codex behavior for the repository.
 - `.codex/agents/` contains Codex-native specialist roles.
 - `.agents/skills/` contains portable skill workflows.
+- `.github/skills/` contains GitHub Copilot skill playbooks for repeated operational procedures.
 - `.devcontainer/` configures GitHub Codespaces startup.
 - `.github/copilot-instructions.md`, `.github/instructions/`, and `.github/agents/` shape GitHub Copilot behavior.
 - `.github/hooks/` and `.github/workflows/copilot-setup-steps.yml` are automation-sensitive.
@@ -22,4 +23,4 @@ This repository is using the Portable Codex Starter personal-use pack derived fr
 - Keep changes narrow and reversible.
 - Prefer existing patterns and repo-local assets over new dependencies.
 - Workflow, hook, and environment files are security-sensitive; default to least privilege and deterministic behavior.
-- If you change the starter pack behavior, update `README.md` so a future copy-paste user still only needs that one file.
+- If you change the starter pack behavior, keep `README.md` focused on quickstart and put longer operational detail in `docs/`.

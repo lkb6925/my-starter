@@ -5,15 +5,11 @@ import { join, basename } from "node:path";
 const ROOT = process.cwd();
 const PROMPTS_DIR = join(ROOT, "prompts");
 const AGENTS_DIR = join(ROOT, ".codex", "agents");
-const EXCLUDED_ROLES = new Set([
-  "explore-harness",
-  "qa-tester",
-  "team-executor",
-  "team-orchestrator",
-]);
+const EXCLUDED_ROLES = new Set([]);
 
 const LOW_ROLES = new Set([
   "explore",
+  "explore-harness",
   "style-reviewer",
   "writer",
   "deepsearch",
@@ -33,7 +29,12 @@ const HIGH_ROLES = new Set([
   "performance-reviewer",
   "quality-reviewer",
   "build-fixer",
+  "team-orchestrator",
   "vision",
+]);
+
+const ROLE_OVERRIDES = new Map([
+  ["explore-harness", { sandbox_mode: "read-only" }],
 ]);
 
 function stripFrontmatter(content) {
@@ -99,17 +100,28 @@ function escapeToml(text) {
   return text.replace(/"{3,}/g, (match) => match.split("").join("\\"));
 }
 
-function toToml({ name, description, reasoningEffort, developerInstructions }) {
-  return [
+function toToml({ name, description, reasoningEffort, developerInstructions, overrides = {} }) {
+  const lines = [
     `# portable-codex-starter agent: ${name}`,
     `name = "${name.replaceAll('"', '\\"')}"`,
     `description = "${description.replaceAll('"', '\\"')}"`,
     `model_reasoning_effort = "${reasoningEffort}"`,
+  ];
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (typeof value === "string") {
+      lines.push(`${key} = "${value.replaceAll('"', '\\"')}"`);
+    }
+  }
+
+  lines.push(
     'developer_instructions = """',
     escapeToml(developerInstructions),
     '"""',
     "",
-  ].join("\n");
+  );
+
+  return lines.join("\n");
 }
 
 async function main() {
@@ -131,11 +143,13 @@ async function main() {
     const description = parseDescription(source, `${role} custom agent`);
     const developerInstructions = sanitizeInstructions(source);
     const reasoningEffort = inferReasoning(role);
+    const overrides = ROLE_OVERRIDES.get(role) || {};
     const toml = toToml({
       name: role,
       description,
       reasoningEffort,
       developerInstructions,
+      overrides,
     });
     await writeFile(join(AGENTS_DIR, `${role}.toml`), toml, "utf8");
     count += 1;

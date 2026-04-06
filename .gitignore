@@ -5,6 +5,8 @@ node_modules/
 .claude/
 .claire/
 .codex/
+!portable-codex-starter/.codex/
+!portable-codex-starter/.codex/**
 
 # Starter-local runtime logs
 portable-codex-starter/.github/hooks/logs/
