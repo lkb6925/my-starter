@@ -11,6 +11,7 @@
 
 - `.devcontainer/devcontainer.json`
 - `.devcontainer/scripts/post-create.sh`
+- `.devcontainer/scripts/update-content.sh`
 
 현재 하는 일:
 
@@ -18,11 +19,18 @@
 - 기본 VS Code extension 추천
 - `openFiles`로 시작 파일 열기
 - recommended secrets 제안
-- `postCreateCommand` 실행
+- `updateContentCommand`로 의존성 준비
+- `postCreateCommand`로 세션 마감 작업 실행
 - 최소 머신 사양 제안
   - 4 CPU
   - 8GB memory
   - 32GB storage
+
+prebuild 관점에서는 이 구성이 더 낫다.
+
+- `npm ci`, `cargo fetch` 같은 무거운 준비 작업은 `updateContentCommand`에 둔다.
+- `git safe.directory` 같은 세션별 작업은 `postCreateCommand`에 둔다.
+- 그래서 prebuild를 켜면 새 Codespace 체감 속도가 더 좋아진다.
 
 ### 아직 수동으로 해야 하는 것
 
@@ -107,9 +115,11 @@ GitHub skills는 다음 절차를 빠르게 재사용하기 위한 것이다.
 현재 포함:
 
 - `.codex/mcp-servers.example.toml`
+- `.codex/config.toml`
+- `.codex/config.toml.example`
 
-즉 "틀"은 넣어뒀다.
-실제 MCP 서버 활성화는 토큰, 명령, 로컬 서버 유무가 달라서 수동 설정이 필요하다.
+기본적으로는 OpenAI Docs와 Context7이 이미 켜져 있다.
+추가 MCP만 작업 성격에 따라 붙이면 된다.
 
 추천 조합과 예시는 [MCP 설정 가이드](mcp-setup.md)를 보면 된다.
 
@@ -141,7 +151,7 @@ GitHub skills는 다음 절차를 빠르게 재사용하기 위한 것이다.
 1. starter 설치
 2. `doctor` 확인
 3. `.codex/config.toml` 확인
-4. 필요하면 `.codex/mcp-servers.example.toml`에서 MCP 섹션 복사
+4. 필요하면 `.codex/mcp-servers.example.toml`에서 선택형 MCP 섹션만 복사
 5. Codespaces secret 준비
 6. GitHub에서 Copilot code review / Code Quality / branch protection 설정
 

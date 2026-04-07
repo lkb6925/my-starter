@@ -62,5 +62,6 @@
       "documentationUrl": "https://ai.google.dev/gemini-api/docs/api-key"
     }
   },
+  "updateContentCommand": "bash .devcontainer/scripts/update-content.sh",
   "postCreateCommand": "bash .devcontainer/scripts/post-create.sh"
 }

@@ -10,7 +10,7 @@ const skillsRoot = args["skills-root"] || ".agents";
 
 const expected = {
   agents: 33,
-  skills: 13,
+  skills: 15,
   githubAgents: 5,
   githubInstructions: 5,
   githubSkills: 4,
@@ -94,6 +94,12 @@ if (!coreOnly) {
     checkExists(
       ".devcontainer/scripts/post-create.sh",
       join(target, ".devcontainer", "scripts", "post-create.sh"),
+    ),
+  );
+  checks.push(
+    checkExists(
+      ".devcontainer/scripts/update-content.sh",
+      join(target, ".devcontainer", "scripts", "update-content.sh"),
     ),
   );
   checks.push(

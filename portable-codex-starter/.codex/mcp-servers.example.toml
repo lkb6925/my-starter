@@ -1,28 +1,36 @@
 # Portable Codex Starter MCP template
-# Copy only the sections you actually use into `.codex/config.toml`.
-# Keep defaults minimal; enable external MCPs intentionally.
+# OpenAI Docs and Context7 are now part of the default `.codex/config.toml`.
+# Use this file for optional extras only.
 
-# Official OpenAI docs MCP. Safe default if you want up-to-date OpenAI docs access.
+# Official OpenAI docs MCP.
 [mcp_servers.openaiDeveloperDocs]
 url = "https://developers.openai.com/mcp"
 
-# GitHub MCP example.
-# Fill these values from the official GitHub MCP server setup you choose.
-#[mcp_servers.github]
-#command = "YOUR_GITHUB_MCP_COMMAND"
+# Context7 MCP.
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+# OpenAPI MCP example.
+# Use this when API contracts are the source of truth.
+#[mcp_servers.openapi]
+#command = "YOUR_OPENAPI_MCP_COMMAND"
 #args = ["..."]
 
-# Context7 example.
-#[mcp_servers.context7]
-#command = "YOUR_CONTEXT7_COMMAND"
+# Postgres MCP example.
+# Keep this read-only by default and prefer dev/staging over production.
+#[mcp_servers.postgres]
+#command = "YOUR_POSTGRES_MCP_COMMAND"
 #args = ["..."]
 
 # Chrome DevTools MCP example.
+# Good third default if you do frontend or browser debugging.
 #[mcp_servers.chrome_devtools]
 #url = "http://localhost:3000/mcp"
 #startup_timeout_sec = 20
 
 # Markitdown example.
+# Good third default if you do document-heavy analysis instead of browser debugging.
 #[mcp_servers.markitdown]
 #command = "YOUR_MARKITDOWN_COMMAND"
 #args = ["..."]

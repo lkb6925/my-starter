@@ -72,6 +72,8 @@ node scripts/doctor.mjs --target /path/to/your-project --skills-root=.codex
 - 일반 탐색: `explore`
 - 코드 리뷰: `code-reviewer`
 - 보안 리뷰: `security-reviewer`
+- DB 읽기 전용 점검: `postgres-readonly`
+- DB 변경 코드 생성: `schema-to-migration`
 - 테스트/검증: `test-engineer`, `qa-tester`, `verifier`
 - 분업 리드: `team-orchestrator`
 - 분업 실행: `team-executor`
@@ -83,6 +85,8 @@ node scripts/doctor.mjs --target /path/to/your-project --skills-root=.codex
 - `executor처럼 바로 구현하고 테스트까지 해줘.`
 - `code-reviewer처럼 현재 변경점 리뷰해줘.`
 - `security-reviewer로 인증 흐름 취약점만 봐줘.`
+- `postgres-readonly로 현재 DB 스키마 가정이 맞는지 확인해줘.`
+- `schema-to-migration으로 실제 스키마를 읽고 migration 파일까지 만들어줘. DB에는 직접 적용하지 마.`
 - `team-orchestrator처럼 planner, architect, executor로 역할 분담해서 결론 내줘.`
 
 ## 운영 자동화에서 이미 들어간 것
@@ -95,6 +99,9 @@ node scripts/doctor.mjs --target /path/to/your-project --skills-root=.codex
 - portable quality gate workflow
 - GitHub Copilot용 repo skills
 - MCP 설정 템플릿
+- 기본 MCP 2종 내장
+  - OpenAI Docs MCP
+  - Context7 MCP
 
 ## 아직 수동으로 켜야 하는 것
 
@@ -115,7 +122,7 @@ npm run verify:kit
 현재 기준 검증 포인트:
 
 - `.codex/agents` 33개
-- `.agents/skills` 13개
+- `.agents/skills` 15개
 - `.github/skills` 4개
 - `.github/agents` 5개
 - `.github/instructions` 5개
@@ -129,3 +136,22 @@ npm run verify:kit
 4. 필요하면 MCP 설정을 붙인다.
 5. Codex에게 역할 이름을 붙여서 시킨다.
 6. GitHub 쪽 자동화는 운영 문서를 보고 켠다.
+
+## 기본 MCP와 추천 3종
+
+이 starter를 설치하면 아래 2개는 기본으로 들어간다.
+
+- `openaiDeveloperDocs`
+- `context7`
+
+세 번째 추천은 작업 성격에 따라 고르면 된다.
+
+- 프론트엔드/브라우저 디버깅이 많다: `chrome_devtools`
+- 문서/파일 변환이 많다: `markitdown`
+- API 계약 중심 개발이 많다: `OpenAPI`
+- DB 스키마/쿼리 검증이 많다: `Postgres MCP`
+
+GitHub 작업은 별도 GitHub MCP보다 GitHub plugin/connector를 우선하는 쪽을 권장한다.
+
+`Postgres MCP`는 읽기 전용 참고 도구로 쓰는 것이 기본이다.
+즉, 내가 Codex에게 시키면 스키마 확인과 migration 코드 생성까지는 가능하지만, DB에 직접 쓰기 작업을 하는 기본 워크플로우는 켜두지 않았다.

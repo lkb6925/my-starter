@@ -22,6 +22,8 @@ Portable skills live under `.agents/skills/`.
 - Verify before claiming done.
 - Default to compact, information-dense responses unless risk or the user asks for detail.
 - Continue automatically through clear, low-risk, reversible next steps.
+- Use the minimum number of MCP tools needed for the task.
+- Start with one primary MCP and add a second only when verification truly needs it.
 </operating_principles>
 
 ## Working Agreements
@@ -73,6 +75,8 @@ Included portable skills:
 - `tdd`
 - `code-review`
 - `security-review`
+- `postgres-readonly`
+- `schema-to-migration`
 - `ai-slop-cleaner`
 - `git-master`
 - `help`
@@ -85,6 +89,8 @@ Suggested routing:
 - use `build-fix` for broken builds or type errors
 - use `tdd` when the user asks for test-first work
 - use `code-review` or `security-review` for review passes
+- use `postgres-readonly` for live schema inspection without mutation
+- use `schema-to-migration` when schema changes are needed but DB access must stay read-only
 - use `ai-slop-cleaner` for cleanup, refactor, or deslop work
 
 ## Constraints
@@ -94,6 +100,62 @@ Suggested routing:
 - Do not perform destructive operations without clear user intent.
 - Do not broaden scope without reason.
 - Do not rely on OMX-specific files, commands, or runtime state.
+
+## MCP Routing
+
+- Prefer local code, tests, and repository inspection first.
+- Prefer the GitHub plugin over a separate GitHub MCP for repo, PR, issue, and review work.
+- Do not call multiple MCPs unless the first one cannot answer the needed question or runtime verification requires a second source.
+
+### MCP roles
+
+- `openaiDeveloperDocs`: OpenAI-specific documentation only
+- `context7`: general framework and library documentation
+- `OpenAPI`: API contract source of truth
+- `Postgres MCP`: database schema source of truth
+- `chrome_devtools`: browser runtime verification only
+
+### Default routing
+
+- OpenAI API / model / tooling questions -> `openaiDeveloperDocs`
+- General framework or library questions -> `context7`
+- API path / auth / request / response / status code questions -> `OpenAPI`
+- Table / column / constraint / migration-impact questions -> `Postgres MCP`
+- UI runtime / console / network / hydration issues -> `chrome_devtools`
+
+### Usage rules
+
+- Start with one primary MCP based on the task.
+- Escalate to a second MCP only for verification.
+- Do not use `context7` for OpenAI-specific docs if `openaiDeveloperDocs` is enough.
+- Do not use documentation MCPs to infer runtime behavior.
+- Do not use documentation MCPs to infer the real database schema.
+- Do not use `chrome_devtools` for documentation lookup.
+- If code and external truth disagree, report the mismatch explicitly.
+
+### Priority by task
+
+- OpenAI feature work: `openaiDeveloperDocs` -> `context7` only if framework integration is needed
+- General app feature work: `context7` -> `OpenAPI` only if API integration is involved
+- API bug/debugging: `OpenAPI` -> `chrome_devtools`
+- DB/schema/query work: `Postgres MCP`
+- Runtime frontend bug: `chrome_devtools` -> `OpenAPI` only if request/response mismatch is suspected
+
+### Postgres MCP safety rules
+
+- Treat `Postgres MCP` as read-only schema inspection by default.
+- Allowed: table, column, index, constraint, foreign-key, enum, and migration-impact inspection.
+- Forbidden by default: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `TRUNCATE`, `ALTER`, or any destructive SQL.
+- Prefer dev or staging over production.
+- Prefer schema inspection over row inspection.
+- If production access exists, use it only as read-only and only when necessary.
+- If a schema change is needed, inspect with `Postgres MCP` and generate migration code in the repo instead of mutating the database through MCP.
+- If the target is production, refuse any direct write or schema mutation through MCP.
+
+### OpenAPI rules
+
+- Use `OpenAPI` as the source of truth for endpoints, methods, auth requirements, request bodies, params, response schemas, and expected status codes.
+- If runtime behavior differs from `OpenAPI`, note the mismatch and verify with `chrome_devtools`.
 
 ## Verification
 
