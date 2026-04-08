@@ -53,6 +53,10 @@
       "description": "Recommended if you use OpenAI Codex, OpenAI MCP integrations, or repo workflows that call OpenAI APIs.",
       "documentationUrl": "https://platform.openai.com/api-keys"
     },
+    "CONTEXT7_API_KEY": {
+      "description": "Recommended if you want stable Context7 MCP usage without anonymous rate limits.",
+      "documentationUrl": "https://context7.com/dashboard"
+    },
     "ANTHROPIC_API_KEY": {
       "description": "Optional if you use the Claude helper scripts or external Anthropic-powered workflows from this repo.",
       "documentationUrl": "https://console.anthropic.com/settings/keys"

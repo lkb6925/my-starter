@@ -112,6 +112,7 @@ url = "https://developers.openai.com/mcp"
 
 - 최신 라이브러리 문서 검색
 - 프레임워크 사용법 확인
+- 가입 후 API 키를 넣으면 anonymous rate limit 없이 더 안정적으로 동작
 
 이미 기본 설정에 들어 있다:
 
@@ -120,6 +121,32 @@ url = "https://developers.openai.com/mcp"
 command = "npx"
 args = ["-y", "@upstash/context7-mcp"]
 ```
+
+권장 설정:
+
+1. `https://context7.com/dashboard` 에서 API 키 발급
+2. Codespaces secret 이름을 `CONTEXT7_API_KEY` 로 추가
+3. Codespace를 다시 열거나 새로 만든다
+
+현재 세션에 바로만 쓰고 싶으면 터미널에서:
+
+```bash
+export CONTEXT7_API_KEY="네_발급_키"
+```
+
+영구적으로 Codespaces에 넣고 싶으면:
+
+- GitHub repo `Settings -> Codespaces -> Secrets`
+- 이름: `CONTEXT7_API_KEY`
+- 값: 발급받은 키
+
+설정 후 확인:
+
+```bash
+node scripts/doctor.mjs --target /path/to/your-project
+```
+
+`CONTEXT7_API_KEY (set)` 으로 보이면 starter 기준 준비는 끝이다.
 
 ### 3. Chrome DevTools MCP
 

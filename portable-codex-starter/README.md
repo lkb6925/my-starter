@@ -144,6 +144,8 @@ npm run verify:kit
 - `openaiDeveloperDocs`
 - `context7`
 
+`context7`를 더 안정적으로 쓰려면 `CONTEXT7_API_KEY`를 Codespaces secret으로 넣는 것을 권장한다.
+
 세 번째 추천은 작업 성격에 따라 고르면 된다.
 
 - 프론트엔드/브라우저 디버깅이 많다: `chrome_devtools`

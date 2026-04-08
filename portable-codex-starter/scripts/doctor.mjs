@@ -1,4 +1,4 @@
-import { readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "./lib/cli-utils.mjs";
@@ -87,6 +87,21 @@ checks.push(checkOptional("config.toml.example", configExamplePath));
 checks.push(checkOptional("mcp-servers.example.toml", mcpExamplePath));
 checks.push(checkOptional("starter-docs/README.md", starterDocsReadmePath));
 checks.push(checkOptional("starter-docs/docs/automation-playbook.md", starterDocsAutomationPath));
+
+const configUsesContext7 = existsSync(configPath)
+  ? (await readTextIfExists(configPath)).includes("[mcp_servers.context7]")
+  : false;
+
+if (configUsesContext7) {
+  checks.push({
+    name: "CONTEXT7_API_KEY",
+    ok: Boolean(process.env.CONTEXT7_API_KEY),
+    optional: true,
+    detail: process.env.CONTEXT7_API_KEY
+      ? "set"
+      : "missing; Context7 may hit anonymous rate limits",
+  });
+}
 
 if (!coreOnly) {
   checks.push(checkExists(".devcontainer/devcontainer.json", join(target, ".devcontainer", "devcontainer.json")));
@@ -217,4 +232,12 @@ async function countMarkdownFiles(path, suffix) {
   if (!existsSync(path)) return 0;
   const entries = await readdir(path, { withFileTypes: true });
   return entries.filter((entry) => entry.isFile() && entry.name.endsWith(suffix)).length;
+}
+
+async function readTextIfExists(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    return "";
+  }
 }
