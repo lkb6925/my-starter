@@ -1,15 +1,21 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib/cli-utils.mjs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packRoot = resolve(__dirname, "..");
 
 const args = parseArgs(process.argv.slice(2));
 const target = resolve(args.target || process.cwd());
 const coreOnly = Boolean(args["core-only"]);
 const skillsRoot = args["skills-root"] || ".agents";
+const checkingPackRoot = target === packRoot;
 
 const expected = {
-  agents: 30,
+  agents: 4,
   skills: 15,
 };
 
@@ -26,6 +32,8 @@ const configExamplePath = join(target, ".codex", "config.toml.example");
 const mcpExamplePath = join(target, ".codex", "mcp-servers.example.toml");
 const starterDocsReadmePath = join(target, ".codex", "starter-docs", "README.md");
 const starterDocsAutomationPath = join(target, ".codex", "starter-docs", "docs", "automation-playbook.md");
+const checkpointsPath = join(target, ".omx", "checkpoints");
+const checkpointsGitkeepPath = join(checkpointsPath, ".gitkeep");
 
 const agentCount = await countAgentFiles(agentsPath);
 const agentsSkillScan = await inspectSkillDirectories(agentsSkillsPath);
@@ -79,12 +87,21 @@ checks.push({
 checks.push(checkOptional("config.toml", configPath));
 checks.push(checkOptional("config.toml.example", configExamplePath));
 checks.push(checkOptional("mcp-servers.example.toml", mcpExamplePath));
-checks.push(checkOptional("starter-docs/README.md", starterDocsReadmePath));
-checks.push(checkOptional("starter-docs/docs/automation-playbook.md", starterDocsAutomationPath));
+if (!checkingPackRoot) {
+  checks.push(checkOptional("starter-docs/README.md", starterDocsReadmePath));
+  checks.push(checkOptional("starter-docs/docs/automation-playbook.md", starterDocsAutomationPath));
+}
 
 const configUsesContext7 = existsSync(configPath)
   ? (await readTextIfExists(configPath)).includes("[mcp_servers.context7]")
   : false;
+const configText = existsSync(configPath) ? await readTextIfExists(configPath) : "";
+const configUsesPostgres = configText.includes("[mcp_servers.postgres]");
+const postgresLooksReadOnly =
+  configText.includes("postgresql://readonly:") ||
+  configText.includes("postgresql://read_only:") ||
+  configText.includes("postgresql://ro_");
+const postgresIsPlaceholder = configText.includes("postgresql://readonly:change-me@localhost/app");
 
 if (configUsesContext7) {
   checks.push({
@@ -94,6 +111,33 @@ if (configUsesContext7) {
     detail: process.env.CONTEXT7_API_KEY
       ? "set"
       : "missing; Context7 may hit anonymous rate limits",
+  });
+}
+
+checks.push({
+  name: "postgres MCP configured",
+  ok: configUsesPostgres,
+  optional: true,
+  detail: configUsesPostgres ? "present" : "missing; DB-backed apps may drift from the real schema",
+});
+checks.push(checkOptional(".omx/checkpoints", checkpointsPath));
+checks.push(checkOptional(".omx/checkpoints/.gitkeep", checkpointsGitkeepPath));
+if (configUsesPostgres) {
+  checks.push({
+    name: "postgres DSN looks read-only",
+    ok: postgresLooksReadOnly,
+    optional: true,
+    detail: postgresLooksReadOnly
+      ? "read-only naming detected"
+      : "use a dedicated read-only account for VM automation",
+  });
+  checks.push({
+    name: "postgres DSN placeholder replaced",
+    ok: !postgresIsPlaceholder,
+    optional: true,
+    detail: postgresIsPlaceholder
+      ? "replace the sample DSN before real use"
+      : "custom DSN configured",
   });
 }
 

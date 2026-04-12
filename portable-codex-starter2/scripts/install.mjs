@@ -16,6 +16,7 @@ const coreOnly = Boolean(args["core-only"]);
 await ensureDir(target);
 await copyInto(join(packRoot, "AGENTS.md"), join(target, "AGENTS.md"));
 await copyTree(join(packRoot, ".codex", "agents"), join(target, ".codex", "agents"));
+await copyTree(join(packRoot, ".omx"), join(target, ".omx"));
 await copyInto(join(packRoot, "README.md"), join(target, ".codex", "starter-docs", "README.md"));
 await copyTree(join(packRoot, "docs"), join(target, ".codex", "starter-docs", "docs"));
 

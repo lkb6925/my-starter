@@ -5,7 +5,7 @@
 ## 남긴 것
 
 - `AGENTS.md`
-  낮용 Codex 작업 계약으로 유지
+  장기 실행용 Codex 작업 계약으로 유지
 - `.codex/agents/architect.toml`
 - `.codex/agents/planner.toml`
 - `.codex/agents/executor.toml`
@@ -14,9 +14,11 @@
 - `.agents/skills/*`
   repo 탐색, 리뷰, DB 점검, 정리용 portable skill 유지
 - `.codex/config.toml`
-  MCP 기본값 유지
+  `context7`, `postgres` 기본값 유지
+- `.omx/checkpoints/`
+  장기 실행용 체크포인트 복구 지점 유지
 - `.devcontainer/**`
-  Codespaces 부트스트랩 유지
+  필요할 때만 쓰는 보조 계층으로 유지
 - `scripts/install.mjs`
 - `scripts/doctor.mjs`
 
@@ -40,7 +42,7 @@
 
 ## 설계 원칙
 
-- 낮용 Codespaces + Codex만 담당한다.
-- 밤용 자동화는 OMX/Hermes가 담당한다.
+- 기존 Hermes / Codex CLI / OMX 런타임을 방해하지 않는다.
+- 필요한 행동 강령과 최소 MCP만 덧씌운다.
 - runtime에 꼭 필요한 파일만 남긴다.
 - 복붙 후 바로 쓰기 쉬운 쪽을 우선한다.

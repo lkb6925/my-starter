@@ -1,5 +1,5 @@
 {
-  "name": "codex-daytrack-workspace",
+  "name": "codex-overnight-ready-workspace",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "hostRequirements": {
     "cpus": 4,
