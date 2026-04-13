@@ -26,19 +26,19 @@ args = ["-y", "@modelcontextprotocol/server-postgres", "postgresql://readonly:ch
 
 ## 운영 규칙
 
+- Next.js, React, 일반 라이브러리 문제: 먼저 `context7`
+- DB 컬럼, 제약, enum, migration 영향 확인: 먼저 `postgres`
+- 코드와 실제 DB가 다르면 추측하지 말고 차이를 명시한다
+- `postgres`는 기본적으로 읽기 전용 스키마 점검 도구로 취급한다
+- production 연결이어도 직접 write/DDL은 하지 않는다
 
 ## VM 실행 전 체크리스트
 
 1. `.codex/config.toml`의 postgres DSN placeholder를 read-only 계정 DSN으로 교체한다.
 2. 가능하면 `sslmode=require`를 사용한다.
 3. 권한 검증 SQL로 write/DDL 권한이 없는 계정인지 확인한다.
-4. `STRICT_LOCAL_CHECKS=1 bash scripts/get-senior-review.sh`로 로컬 체크 실패 시 즉시 중단되도록 실행한다.
-
-- Next.js, React, 일반 라이브러리 문제: 먼저 `context7`
-- DB 컬럼, 제약, enum, migration 영향 확인: 먼저 `postgres`
-- 코드와 실제 DB가 다르면 추측하지 말고 차이를 명시한다
-- `postgres`는 기본적으로 읽기 전용 스키마 점검 도구로 취급한다
-- production 연결이어도 직접 write/DDL은 하지 않는다
+4. `bash scripts/vm-ready-check.sh`로 VM 사전 점검을 통과한다.
+5. 실제 리뷰 실행은 `STRICT_LOCAL_CHECKS=1 bash scripts/get-senior-review.sh`로 수행한다.
 
 ## Context7
 

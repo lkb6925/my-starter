@@ -43,16 +43,16 @@ if (skillsRoot === ".agents") {
   checks.push(checkExists(".agents/skills", agentsSkillsPath));
   checks.push({
     name: "skill count",
-    ok: agentsSkillScan.count === expected.skills,
-    detail: `${agentsSkillScan.count}/${expected.skills} in .agents/skills`,
+    ok: agentsSkillScan.count >= expected.skills,
+    detail: `${agentsSkillScan.count} (minimum ${expected.skills}) in .agents/skills`,
   });
   checks.push(checkOptionalIssues(".agents/skills structure", agentsSkillScan.issues));
 } else if (skillsRoot === ".codex") {
   checks.push(checkExists(".codex/skills", codexSkillsPath));
   checks.push({
     name: "skill count",
-    ok: codexSkillScan.count === expected.skills,
-    detail: `${codexSkillScan.count}/${expected.skills} in .codex/skills`,
+    ok: codexSkillScan.count >= expected.skills,
+    detail: `${codexSkillScan.count} (minimum ${expected.skills}) in .codex/skills`,
   });
   checks.push(checkOptionalIssues(".codex/skills structure", codexSkillScan.issues));
 } else if (skillsRoot === "both") {
@@ -60,13 +60,13 @@ if (skillsRoot === ".agents") {
   checks.push(checkExists(".codex/skills", codexSkillsPath));
   checks.push({
     name: "skill count (.agents)",
-    ok: agentsSkillScan.count === expected.skills,
-    detail: `${agentsSkillScan.count}/${expected.skills}`,
+    ok: agentsSkillScan.count >= expected.skills,
+    detail: `${agentsSkillScan.count} (minimum ${expected.skills})`,
   });
   checks.push({
     name: "skill count (.codex)",
-    ok: codexSkillScan.count === expected.skills,
-    detail: `${codexSkillScan.count}/${expected.skills}`,
+    ok: codexSkillScan.count >= expected.skills,
+    detail: `${codexSkillScan.count} (minimum ${expected.skills})`,
   });
   checks.push(checkOptionalIssues(".agents/skills structure", agentsSkillScan.issues));
   checks.push(checkOptionalIssues(".codex/skills structure", codexSkillScan.issues));

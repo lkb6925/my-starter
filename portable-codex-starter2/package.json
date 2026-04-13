@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "doctor:kit": "node scripts/doctor.mjs",
-    "install:kit": "node scripts/install.mjs"
+    "install:kit": "node scripts/install.mjs",
+    "vm:preflight": "bash scripts/vm-ready-check.sh",
+    "senior-review": "bash scripts/get-senior-review.sh"
   }
 }

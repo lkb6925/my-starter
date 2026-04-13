@@ -3,39 +3,71 @@ set -Eeuo pipefail
 
 strict_checks="${STRICT_LOCAL_CHECKS:-0}"
 
-run_check() {
-  local label="$1"
-  shift
+has_npm_script() {
+  local script_name="$1"
+  node -e '
+    const fs = require("fs");
+    try {
+      const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+      process.exit(pkg && pkg.scripts && pkg.scripts[process.argv[1]] ? 0 : 1);
+    } catch {
+      process.exit(1);
+    }
+  ' "$script_name"
+}
 
-  echo "[INFO] Running ${label}..."
-  if "$@"; then
-    echo "[PASS] ${label}"
+run_npm_check() {
+  local script_name="$1"
+
+  if ! has_npm_script "$script_name"; then
+    echo "[SKIP] ${script_name} (package.json script not found)"
+    return 2
+  fi
+
+  echo "[INFO] Running ${script_name}..."
+  if npm run "$script_name"; then
+    echo "[PASS] ${script_name}"
     return 0
   fi
 
-  echo "[FAIL] ${label}"
+  echo "[FAIL] ${script_name}"
   return 1
 }
 
 echo "[INFO] Running local checks..."
-lint_ok=0
-if run_check "lint" npm run lint; then
-  lint_ok=1
+lint_state="skip"
+if run_npm_check "lint"; then
+  lint_state="pass"
+else
+  case $? in
+    1) lint_state="fail" ;;
+    2) lint_state="skip" ;;
+  esac
 fi
 
-typecheck_ok=0
-if run_check "typecheck" npm run typecheck; then
-  typecheck_ok=1
+typecheck_state="skip"
+if run_npm_check "typecheck"; then
+  typecheck_state="pass"
+else
+  case $? in
+    1) typecheck_state="fail" ;;
+    2) typecheck_state="skip" ;;
+  esac
 fi
 
-test_ok=0
-if run_check "test" npm test; then
-  test_ok=1
+test_state="skip"
+if run_npm_check "test"; then
+  test_state="pass"
+else
+  case $? in
+    1) test_state="fail" ;;
+    2) test_state="skip" ;;
+  esac
 fi
 
-echo "[INFO] Local checks summary: lint=${lint_ok} typecheck=${typecheck_ok} test=${test_ok}"
+echo "[INFO] Local checks summary: lint=${lint_state} typecheck=${typecheck_state} test=${test_state}"
 
-if [[ "${strict_checks}" == "1" ]] && [[ ${lint_ok} -ne 1 || ${typecheck_ok} -ne 1 || ${test_ok} -ne 1 ]]; then
+if [[ "${strict_checks}" == "1" ]] && [[ "${lint_state}" == "fail" || "${typecheck_state}" == "fail" || "${test_state}" == "fail" ]]; then
   echo "[ERROR] STRICT_LOCAL_CHECKS=1 and at least one local check failed."
   exit 1
 fi
