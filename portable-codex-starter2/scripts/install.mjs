@@ -1,4 +1,4 @@
-import { cp, mkdir, stat } from "node:fs/promises";
+import { cp, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib/cli-utils.mjs";
@@ -19,6 +19,7 @@ await copyTree(join(packRoot, ".codex", "agents"), join(target, ".codex", "agent
 await copyTree(join(packRoot, ".omx"), join(target, ".omx"));
 await copyInto(join(packRoot, "README.md"), join(target, ".codex", "starter-docs", "README.md"));
 await copyTree(join(packRoot, "docs"), join(target, ".codex", "starter-docs", "docs"));
+await mergeGitignore(join(packRoot, ".gitignore"), join(target, ".gitignore"));
 
 if (skillsRoot === ".agents" || skillsRoot === "both") {
   await copyTree(join(packRoot, ".agents", "skills"), join(target, ".agents", "skills"));
@@ -75,4 +76,43 @@ async function copyTree(source, destination) {
   }
   await mkdir(dirname(destination), { recursive: true });
   await cp(source, destination, { recursive: true, force: true });
+}
+
+async function mergeGitignore(source, destination) {
+  let sourceText = "";
+  try {
+    sourceText = await readFile(source, "utf8");
+  } catch {
+    return;
+  }
+
+  const sourceLines = sourceText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  let destinationText = "";
+  try {
+    destinationText = await readFile(destination, "utf8");
+  } catch {
+    destinationText = "";
+  }
+
+  const destinationLines = new Set(
+    destinationText
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  );
+
+  const missingLines = sourceLines.filter((line) => !destinationLines.has(line));
+  if (missingLines.length === 0) {
+    return;
+  }
+
+  const separator = destinationText.length > 0 && !destinationText.endsWith("\n") ? "\n" : "";
+  const prefix = destinationText.length > 0 ? "\n# portable-codex-starter2\n" : "";
+  const merged = `${destinationText}${separator}${prefix}${missingLines.join("\n")}\n`;
+  await mkdir(dirname(destination), { recursive: true });
+  await writeFile(destination, merged, "utf8");
 }

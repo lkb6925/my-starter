@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 strict_checks="${STRICT_LOCAL_CHECKS:-0}"
+test_timeout_seconds="${TEST_TIMEOUT_SECONDS:-600}"
 round_arg="${1:-}"
 round="${round_arg:-${SENIOR_REVIEW_ROUND:-1}}"
 test_output_file=".tmp-test-output-round${round}.txt"
@@ -63,9 +64,16 @@ run_npm_check() {
   fi
 
   echo "[INFO] Running ${script_name}..."
-  if npm run "$script_name" >> "${output_file}" 2>&1; then
-    echo "[PASS] ${script_name}"
-    return 0
+  if command -v timeout >/dev/null 2>&1; then
+    if timeout "${test_timeout_seconds}" npm run "$script_name" >> "${output_file}" 2>&1; then
+      echo "[PASS] ${script_name}"
+      return 0
+    fi
+  else
+    if npm run "$script_name" >> "${output_file}" 2>&1; then
+      echo "[PASS] ${script_name}"
+      return 0
+    fi
   fi
 
   echo "[FAIL] ${script_name}"
