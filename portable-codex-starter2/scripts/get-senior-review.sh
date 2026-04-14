@@ -18,8 +18,8 @@ fi
 export GEMINI_TEST_OUTPUT_PATH="${test_output_file}"
 export GEMINI_LOCAL_CHECKS_PATH="${local_checks_log}"
 
-if [[ ! "${round}" =~ ^[1-9][0-9]*$ ]]; then
-  echo "[ERROR] SENIOR_REVIEW_ROUND must be a positive integer."
+if [[ ! "${round}" =~ ^[12]$ ]]; then
+  echo "[ERROR] SENIOR_REVIEW_ROUND must be 1 or 2. Max 2 rounds allowed."
   exit 1
 fi
 
