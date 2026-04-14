@@ -92,8 +92,15 @@ function validateResultShape(parsed) {
 const diff =
   GEMINI_DIFF_MODE === "--cached" ? sh("git diff --cached") : sh(`git diff ${GEMINI_DIFF_BASE}`);
 const changedFiles = getChangedFiles();
+const workingTreeDiff = sh("git diff --name-only");
 
 if (!diff.trim()) {
+  if (GEMINI_DIFF_MODE === "--cached" && workingTreeDiff.trim()) {
+    console.error(
+      "No staged diff found for review. Stage your changes first (e.g., `git add .`) before running senior-review.",
+    );
+    process.exit(1);
+  }
   console.log(JSON.stringify({ verdict: "pass", issues: [] }, null, 2));
   process.exit(0);
 }

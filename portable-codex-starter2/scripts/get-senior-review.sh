@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 
 strict_checks="${STRICT_LOCAL_CHECKS:-0}"
-round="${SENIOR_REVIEW_ROUND:-1}"
+round_arg="${1:-}"
+round="${round_arg:-${SENIOR_REVIEW_ROUND:-1}}"
 test_output_file=".tmp-test-output-round${round}.txt"
 local_checks_log=".tmp-local-checks-round${round}.log"
 review_output_file=".tmp-gemini-review-round${round}.json"
@@ -109,6 +110,11 @@ fi
 if [[ "${strict_checks}" == "1" ]] && [[ "${typecheck_state}" == "skip" || "${test_state}" == "skip" ]]; then
   echo "[ERROR] STRICT_LOCAL_CHECKS=1 requires both typecheck and test scripts."
   echo "[HINT] Add npm scripts for \"typecheck\" and \"test\" (TDD-first recommended), then retry."
+  exit 1
+fi
+
+if [[ "${test_state}" == "skip" ]]; then
+  echo "[ERROR] test script is missing. Stop review and set up a test runner (Vitest/Jest) first."
   exit 1
 fi
 

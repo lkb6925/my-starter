@@ -88,6 +88,12 @@ node scripts/doctor.mjs --target /path/to/your-project
 - 스키마 조회 전용이면 read-only 계정을 우선한다
 - 마이그레이션 생성/검증이 필요하면 MCP DSN과 앱 실행 DSN을 분리해 관리한다
 
+### Supabase 운영 기준
+
+- Supabase를 쓰면 VM에 `POSTGRES_MCP_DSN`을 secret으로 넣고 `scripts/postgres-mcp.sh`가 그 값을 사용한다.
+- 앱 실행용 DB URL(`DATABASE_URL` 등)과 MCP 점검용 DSN(`POSTGRES_MCP_DSN`)은 분리한다.
+- Git tracked 파일에는 Supabase 비밀번호가 포함된 DSN을 절대 저장하지 않는다.
+
 ## 추천 설치 방식
 
 VM 하네스로는 보통 아래 조합이 가장 안전하다.
