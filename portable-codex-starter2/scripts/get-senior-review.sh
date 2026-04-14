@@ -8,11 +8,21 @@ test_output_file=".tmp-test-output-round${round}.txt"
 local_checks_log=".tmp-local-checks-round${round}.log"
 review_output_file=".tmp-gemini-review-round${round}.json"
 
-if [[ -f ".env" ]]; then
+env_file="${ENV_FILE:-}"
+if [[ -z "${env_file}" ]]; then
+  if [[ -f ".env.local" ]]; then
+    env_file=".env.local"
+  elif [[ -f ".env" ]]; then
+    env_file=".env"
+  fi
+fi
+
+if [[ -n "${env_file}" ]]; then
   # shellcheck disable=SC1091
   set -a
-  source ".env"
+  source "${env_file}"
   set +a
+  echo "[INFO] Loaded environment file: ${env_file}"
 fi
 
 export GEMINI_TEST_OUTPUT_PATH="${test_output_file}"
@@ -93,28 +103,39 @@ else
   esac
 fi
 
+build_state="skip"
+if run_npm_check "build" "${local_checks_log}"; then
+  build_state="pass"
+else
+  case $? in
+    1) build_state="fail" ;;
+    2) build_state="skip" ;;
+  esac
+fi
+
 {
   echo "=== summary ==="
   echo "lint=${lint_state}"
   echo "typecheck=${typecheck_state}"
   echo "test=${test_state}"
+  echo "build=${build_state}"
 } >> "${local_checks_log}"
 
-echo "[INFO] Local checks summary: lint=${lint_state} typecheck=${typecheck_state} test=${test_state}"
+echo "[INFO] Local checks summary: lint=${lint_state} typecheck=${typecheck_state} test=${test_state} build=${build_state}"
 
-if [[ "${strict_checks}" == "1" ]] && [[ "${lint_state}" == "fail" || "${typecheck_state}" == "fail" || "${test_state}" == "fail" ]]; then
+if [[ "${strict_checks}" == "1" ]] && [[ "${lint_state}" == "fail" || "${typecheck_state}" == "fail" || "${test_state}" == "fail" || "${build_state}" == "fail" ]]; then
   echo "[ERROR] STRICT_LOCAL_CHECKS=1 and at least one local check failed."
   exit 1
 fi
 
-if [[ "${strict_checks}" == "1" ]] && [[ "${typecheck_state}" == "skip" || "${test_state}" == "skip" ]]; then
-  echo "[ERROR] STRICT_LOCAL_CHECKS=1 requires both typecheck and test scripts."
-  echo "[HINT] Add npm scripts for \"typecheck\" and \"test\" (TDD-first recommended), then retry."
+if [[ "${typecheck_state}" != "pass" ]]; then
+  echo "[ERROR] typecheck must pass before senior review."
   exit 1
 fi
 
-if [[ "${test_state}" == "skip" ]]; then
-  echo "[ERROR] test script is missing. Stop review and set up a test runner (Vitest/Jest) first."
+if [[ "${test_state}" != "pass" && "${build_state}" != "pass" ]]; then
+  echo "[ERROR] Need at least one strong runtime signal: pass \"test\" or pass \"build\"."
+  echo "[HINT] Add a non-watch \"test\" script (recommended) or ensure \"build\" passes."
   exit 1
 fi
 

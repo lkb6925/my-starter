@@ -38,7 +38,7 @@ args = ["scripts/postgres-mcp.sh"]
 2. 가능하면 `sslmode=require`를 사용한다.
 3. 권한 검증 SQL로 write/DDL 권한이 없는 계정인지 확인한다.
 4. `bash scripts/vm-ready-check.sh`로 VM 사전 점검을 통과한다.
-5. 실제 리뷰 실행은 `STRICT_LOCAL_CHECKS=1 bash scripts/get-senior-review.sh`로 수행한다.
+5. 실제 리뷰 실행은 `STRICT_LOCAL_CHECKS=1 bash scripts/get-senior-review.sh 1`로 시작한다.
 
 ### 참고: 로컬 포장/배포 준비 중일 때
 
@@ -52,7 +52,7 @@ VM_PREFLIGHT_STRICT=1 bash scripts/vm-ready-check.sh
 
 ### 환경변수 지속성(.env)
 
-- `scripts/postgres-mcp.sh`, `scripts/vm-ready-check.sh`, `scripts/get-senior-review.sh`는 루트 `.env`가 있으면 자동 로드한다.
+- `scripts/postgres-mcp.sh`, `scripts/vm-ready-check.sh`, `scripts/get-senior-review.sh`는 `ENV_FILE` 지정이 있으면 그 파일을 우선 로드하고, 없으면 `.env.local` → `.env` 순서로 로드한다.
 - tmux/새 셸에서도 같은 값을 유지하려면 VM 프로젝트 루트 `.env`를 사용한다.
 
 ## Context7
@@ -93,6 +93,13 @@ node scripts/doctor.mjs --target /path/to/your-project
 - Supabase를 쓰면 VM에 `POSTGRES_MCP_DSN`을 secret으로 넣고 `scripts/postgres-mcp.sh`가 그 값을 사용한다.
 - 앱 실행용 DB URL(`DATABASE_URL` 등)과 MCP 점검용 DSN(`POSTGRES_MCP_DSN`)은 분리한다.
 - Git tracked 파일에는 Supabase 비밀번호가 포함된 DSN을 절대 저장하지 않는다.
+
+## Senior Review 증거 기준
+
+- `typecheck`는 반드시 pass여야 한다.
+- `test`가 pass면 가장 좋다.
+- `test`가 없거나 실패하면 `build` pass를 대체 증거로 허용한다.
+- 테스트를 설정할 때는 watch 모드가 아닌 1회 실행 모드(`vitest run`, `jest --passWithNoTests`)를 사용한다.
 
 ## 추천 설치 방식
 

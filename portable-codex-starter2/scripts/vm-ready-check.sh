@@ -4,11 +4,21 @@ set -Eeuo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-if [[ -f ".env" ]]; then
+env_file="${ENV_FILE:-}"
+if [[ -z "${env_file}" ]]; then
+  if [[ -f ".env.local" ]]; then
+    env_file=".env.local"
+  elif [[ -f ".env" ]]; then
+    env_file=".env"
+  fi
+fi
+
+if [[ -n "${env_file}" ]]; then
   # shellcheck disable=SC1091
   set -a
-  source ".env"
+  source "${env_file}"
   set +a
+  echo "[INFO] Loaded environment file: ${env_file}"
 fi
 
 echo "[INFO] VM preflight started in ${ROOT_DIR}"
@@ -52,8 +62,8 @@ else
   echo "[PASS] No hardcoded postgres URL found in .codex/config.toml"
 fi
 
-if [[ -n "${POSTGRES_MCP_DSN:-}" || -n "${POSTGRES_READONLY_URL:-}" ]]; then
-  echo "[PASS] POSTGRES_MCP_DSN (or legacy POSTGRES_READONLY_URL) is set"
+if [[ -n "${POSTGRES_MCP_DSN:-}" ]]; then
+  echo "[PASS] POSTGRES_MCP_DSN is set"
 else
   if [[ "${strict_preflight}" == "1" ]]; then
     echo "[FAIL] POSTGRES_MCP_DSN is missing (VM_PREFLIGHT_STRICT=1)"

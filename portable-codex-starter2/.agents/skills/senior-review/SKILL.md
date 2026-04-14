@@ -8,13 +8,13 @@ description: Run the Gemini senior review script, read the feedback, and fix the
 You are the primary executor. You must fix the code yourself based on the senior architect's review. **Do NOT delegate this to a sub-agent or another codex command.**
 
 ## Workflow
-1. **[Essential]** Run `git add .` to stage your changes before review.
+1. **[Essential]** Stage only intended review scope files (never broad-add secrets/artefacts). Example: `git add <changed-files>` and verify with `git status --short`.
 2. Run Round 1: `bash scripts/get-senior-review.sh 1`.
-3. If output contains `[SKIP] test (package.json script not found)`, stop immediately. You must set up a test runner (Vitest/Jest), add a `test` script, and create at least one sanity test before continuing. In CI/automation, configure tests as run-once mode (e.g., `vitest run`, `jest --passWithNoTests`) and never use watch mode.
+3. Ensure evidence checks pass before review: `typecheck` must pass, and at least one of `test` or `build` must pass. If `test` is missing, add a run-once test command (e.g., `vitest run`, `jest --passWithNoTests`) as soon as practical; never use watch mode in automation.
 4. Read `.tmp-gemini-review-round1.json` and run `node scripts/review-gate.mjs --file .tmp-gemini-review-round1.json`.
 5. If the verdict is "pass", the review is complete. You may proceed.
 6. If the verdict is "fail" and there are issues, **YOU** must directly modify the files to fix the reported issues.
-7. After applying your fixes, run `git add .` again and then run Round 2: `bash scripts/get-senior-review.sh 2`.
+7. After applying your fixes, stage only intended files again (`git add <changed-files>`), confirm with `git status --short`, then run Round 2: `bash scripts/get-senior-review.sh 2`.
 8. Read `.tmp-gemini-review-round2.json` and run `node scripts/review-gate.mjs --file .tmp-gemini-review-round2.json --final`.
 9. You **MUST STOP** after a maximum of 2 review rounds, even if minor issues remain. Do not loop a third time.
 10. Hard gate: if any `severity="critical"` remains after Round 2, **DO NOT commit**.

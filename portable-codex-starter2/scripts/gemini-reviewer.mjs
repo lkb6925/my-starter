@@ -5,11 +5,9 @@ import fs from "node:fs";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
-const GEMINI_DIFF_MODE = process.env.GEMINI_DIFF_MODE || "--cached";
-const GEMINI_DIFF_BASE = process.env.GEMINI_DIFF_BASE || "HEAD~1";
+const GEMINI_DIFF_MODE = process.env.GEMINI_DIFF_MODE || "cached";
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || "45000");
 const MAX_DIFF_CHARS = Number(process.env.GEMINI_MAX_DIFF_CHARS || "120000");
-const MAX_FILE_CHARS = Number(process.env.GEMINI_MAX_FILE_CHARS || "20000");
 const MAX_AGENTS_CHARS = Number(process.env.GEMINI_MAX_AGENTS_CHARS || "12000");
 const MAX_TEST_OUTPUT_CHARS = Number(process.env.GEMINI_MAX_TEST_OUTPUT_CHARS || "20000");
 const GEMINI_TEST_OUTPUT_PATH = process.env.GEMINI_TEST_OUTPUT_PATH || ".tmp-test-output.txt";
@@ -36,9 +34,9 @@ function sh(cmd) {
 
 function getChangedFiles() {
   const out =
-    GEMINI_DIFF_MODE === "--cached"
+    GEMINI_DIFF_MODE === "cached"
       ? sh("git diff --cached --name-only")
-      : sh(`git diff --name-only ${GEMINI_DIFF_BASE}`);
+      : sh("git diff --name-only");
   return out ? out.split("\n").filter(Boolean) : [];
 }
 
@@ -86,16 +84,28 @@ function validateResultShape(parsed) {
     return false;
   }
 
+  for (const issue of parsed.issues) {
+    if (typeof issue !== "object" || issue === null) {
+      return false;
+    }
+    if (typeof issue.blocking !== "boolean") {
+      return false;
+    }
+    if (typeof issue.policy_violation !== "boolean") {
+      return false;
+    }
+  }
+
   return true;
 }
 
 const diff =
-  GEMINI_DIFF_MODE === "--cached" ? sh("git diff --cached") : sh(`git diff ${GEMINI_DIFF_BASE}`);
+  GEMINI_DIFF_MODE === "cached" ? sh("git diff --cached") : sh("git diff");
 const changedFiles = getChangedFiles();
 const workingTreeDiff = sh("git diff --name-only");
 
 if (!diff.trim()) {
-  if (GEMINI_DIFF_MODE === "--cached" && workingTreeDiff.trim()) {
+  if (GEMINI_DIFF_MODE === "cached" && workingTreeDiff.trim()) {
     console.error(
       "No staged diff found for review. Stage your changes first (e.g., `git add .`) before running senior-review.",
     );
@@ -104,11 +114,6 @@ if (!diff.trim()) {
   console.log(JSON.stringify({ verdict: "pass", issues: [] }, null, 2));
   process.exit(0);
 }
-
-const fileContents = changedFiles.map((file) => ({
-  file,
-  content: truncateWithNotice(readFileSafe(file), MAX_FILE_CHARS),
-}));
 
 const agentsMd = fs.existsSync("AGENTS.md")
   ? truncateWithNotice(readFileSafe("AGENTS.md"), MAX_AGENTS_CHARS)
@@ -119,6 +124,12 @@ const testOutput = fs.existsSync(GEMINI_TEST_OUTPUT_PATH)
 const localChecks = fs.existsSync(GEMINI_LOCAL_CHECKS_PATH)
   ? truncateWithNotice(readFileSafe(GEMINI_LOCAL_CHECKS_PATH), MAX_LOCAL_CHECKS_CHARS)
   : "(missing)";
+const failedSignalSummary = [localChecks, testOutput]
+  .join("\n")
+  .split("\n")
+  .filter((line) => /\[FAIL\]|\[ERROR\]|\[SKIP\]|^=== summary ===|^(lint|typecheck|test|build)=/.test(line))
+  .slice(0, 120)
+  .join("\n");
 
 const systemPrompt = `
 You are a brutally strict senior software architect with 15 years of experience reviewing production systems.
@@ -147,7 +158,9 @@ JSON format:
       "category": "correctness" | "performance" | "architecture" | "edge-case",
       "file": "path/to/file",
       "reason": "why this is a problem",
-      "fix": "specific fix direction"
+      "fix": "specific minimal fix direction",
+      "blocking": true | false,
+      "policy_violation": true | false
     }
   ]
 }
@@ -158,7 +171,7 @@ const userPrompt = `
 ${agentsMd || "(none)"}
 
 # Changed files
-${JSON.stringify(fileContents, null, 2)}
+${JSON.stringify(changedFiles, null, 2)}
 
 # Diff
 ${truncateWithNotice(diff, MAX_DIFF_CHARS)}
@@ -168,6 +181,9 @@ ${testOutput}
 
 # Local checks output
 ${localChecks}
+
+# Failed signal summary
+${failedSignalSummary || "(none)"}
 `;
 
 const body = {

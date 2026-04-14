@@ -28,27 +28,18 @@ if (!parsed || !Array.isArray(parsed.issues)) {
 }
 
 const issues = parsed.issues;
-const criticalIssues = issues.filter((issue) => issue?.severity === "critical");
-if (criticalIssues.length > 0) {
+const criticalOrBlockingIssues = issues.filter(
+  (issue) => issue?.severity === "critical" || issue?.blocking === true,
+);
+if (criticalOrBlockingIssues.length > 0) {
   console.error(
-    `[ERROR] Blocking critical issues detected (${criticalIssues.length}). Do NOT commit until fixed.`,
+    `[ERROR] Blocking issues detected (${criticalOrBlockingIssues.length}). Do NOT commit until fixed.`,
   );
   process.exit(1);
 }
 
 if (isFinal) {
-  const architectureOrAgentsIssues = issues.filter((issue) => {
-    const category = typeof issue?.category === "string" ? issue.category.toLowerCase() : "";
-    const reason = typeof issue?.reason === "string" ? issue.reason.toLowerCase() : "";
-    const fix = typeof issue?.fix === "string" ? issue.fix.toLowerCase() : "";
-    return (
-      category === "architecture" ||
-      reason.includes("agents.md") ||
-      reason.includes("architectural inconsistency") ||
-      fix.includes("agents.md") ||
-      fix.includes("architectural inconsistency")
-    );
-  });
+  const architectureOrAgentsIssues = issues.filter((issue) => issue?.policy_violation === true);
 
   if (architectureOrAgentsIssues.length > 0) {
     console.error(
