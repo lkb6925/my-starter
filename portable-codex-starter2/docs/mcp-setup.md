@@ -100,6 +100,7 @@ node scripts/doctor.mjs --target /path/to/your-project
 - `test`가 pass면 가장 좋다.
 - `test`가 없거나 실패하면 `build` pass를 대체 증거로 허용한다.
 - 테스트를 설정할 때는 watch 모드가 아닌 1회 실행 모드(`vitest run`, `jest --passWithNoTests`)를 사용한다.
+- 위 조건은 `STRICT_LOCAL_CHECKS=1`에서 강제되고, non-strict 모드에서는 경고로만 기록된다.
 
 ## 추천 설치 방식
 

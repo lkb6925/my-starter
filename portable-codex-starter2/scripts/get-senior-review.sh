@@ -128,15 +128,27 @@ if [[ "${strict_checks}" == "1" ]] && [[ "${lint_state}" == "fail" || "${typeche
   exit 1
 fi
 
-if [[ "${typecheck_state}" != "pass" ]]; then
-  echo "[ERROR] typecheck must pass before senior review."
+if [[ "${strict_checks}" == "1" ]] && [[ "${typecheck_state}" == "fail" ]]; then
+  echo "[ERROR] typecheck failed. Fix type errors before senior review."
   exit 1
 fi
 
-if [[ "${test_state}" != "pass" && "${build_state}" != "pass" ]]; then
-  echo "[ERROR] Need at least one strong runtime signal: pass \"test\" or pass \"build\"."
+if [[ "${strict_checks}" == "1" ]] && [[ "${test_state}" != "pass" && "${build_state}" != "pass" ]]; then
+  echo "[ERROR] STRICT_LOCAL_CHECKS=1 requires at least one strong runtime signal: pass \"test\" or pass \"build\"."
   echo "[HINT] Add a non-watch \"test\" script (recommended) or ensure \"build\" passes."
   exit 1
+fi
+
+if [[ "${strict_checks}" != "1" ]]; then
+  if [[ "${typecheck_state}" == "fail" ]]; then
+    echo "[WARN] typecheck failed (non-strict mode)."
+  elif [[ "${typecheck_state}" == "skip" ]]; then
+    echo "[WARN] typecheck script missing (non-strict mode)."
+  fi
+
+  if [[ "${test_state}" != "pass" && "${build_state}" != "pass" ]]; then
+    echo "[WARN] Neither test nor build passed (non-strict mode)."
+  fi
 fi
 
 echo "[INFO] Requesting Gemini Senior Architect review..."

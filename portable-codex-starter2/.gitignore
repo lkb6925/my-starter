@@ -2,5 +2,6 @@
 .env.local
 .tmp-gemini-review.json
 .tmp-gemini-review-round*.json
+.tmp-gemini-review-round*.json.tmp
 .tmp-local-checks-round*.log
 .tmp-test-output-round*.txt
