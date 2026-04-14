@@ -129,10 +129,7 @@ const agentsMd = fs.existsSync("AGENTS.md")
   ? truncateWithNotice(readFileSafe("AGENTS.md"), MAX_AGENTS_CHARS)
   : "";
 const testOutput = fs.existsSync(GEMINI_TEST_OUTPUT_PATH)
-  ? tailWithNotice(
-      truncateWithNotice(readFileSafe(GEMINI_TEST_OUTPUT_PATH), MAX_TEST_OUTPUT_CHARS),
-      MAX_TEST_OUTPUT_TAIL_CHARS,
-    )
+  ? tailWithNotice(readFileSafe(GEMINI_TEST_OUTPUT_PATH), MAX_TEST_OUTPUT_TAIL_CHARS)
   : "(missing)";
 const localChecks = fs.existsSync(GEMINI_LOCAL_CHECKS_PATH)
   ? tailWithNotice(readFileSafe(GEMINI_LOCAL_CHECKS_PATH), MAX_LOCAL_CHECKS_CHARS)
