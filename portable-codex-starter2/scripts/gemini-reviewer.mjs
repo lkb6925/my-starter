@@ -7,7 +7,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-pro";
 const GEMINI_DIFF_MODE = process.env.GEMINI_DIFF_MODE || "cached";
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || "45000");
-const MAX_DIFF_CHARS = Number(process.env.GEMINI_MAX_DIFF_CHARS || "120000");
+const MAX_DIFF_CHARS = Number(process.env.GEMINI_MAX_DIFF_CHARS || "80000");
 const MAX_AGENTS_CHARS = Number(process.env.GEMINI_MAX_AGENTS_CHARS || "12000");
 const MAX_TEST_OUTPUT_CHARS = Number(process.env.GEMINI_MAX_TEST_OUTPUT_CHARS || "20000");
 const MAX_TEST_OUTPUT_TAIL_CHARS = Number(process.env.GEMINI_MAX_TEST_OUTPUT_TAIL_CHARS || "10000");
@@ -111,6 +111,8 @@ function validateResultShape(parsed) {
 
 const diff =
   GEMINI_DIFF_MODE === "cached" ? sh("git diff --cached") : sh("git diff");
+const diffStat =
+  GEMINI_DIFF_MODE === "cached" ? sh("git diff --cached --stat") : sh("git diff --stat");
 const changedFiles = getChangedFiles();
 const workingTreeDiff = sh("git diff --name-only");
 
@@ -181,6 +183,9 @@ ${JSON.stringify(changedFiles, null, 2)}
 
 # Diff
 ${truncateWithNotice(diff, MAX_DIFF_CHARS)}
+
+# Diff stat
+${diffStat || "(none)"}
 
 # Test output
 ${testOutput}

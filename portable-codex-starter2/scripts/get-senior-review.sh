@@ -3,6 +3,8 @@ set -Eeuo pipefail
 
 strict_checks="${STRICT_LOCAL_CHECKS:-0}"
 test_timeout_seconds="${TEST_TIMEOUT_SECONDS:-600}"
+allow_build_only_review="${ALLOW_BUILD_ONLY_REVIEW:-0}"
+require_explicit_env_file="${REQUIRE_EXPLICIT_ENV_FILE:-0}"
 round_arg="${1:-}"
 round="${round_arg:-${SENIOR_REVIEW_ROUND:-1}}"
 test_output_file=".tmp-test-output-round${round}.txt"
@@ -10,6 +12,10 @@ local_checks_log=".tmp-local-checks-round${round}.log"
 review_output_file=".tmp-gemini-review-round${round}.json"
 
 env_file="${ENV_FILE:-}"
+if [[ -z "${env_file}" ]] && [[ "${CI:-}" == "true" || "${require_explicit_env_file}" == "1" ]]; then
+  echo "[ERROR] ENV_FILE must be explicitly set in CI/production mode."
+  exit 1
+fi
 if [[ -z "${env_file}" ]]; then
   if [[ -f ".env.local" ]]; then
     env_file=".env.local"
@@ -153,6 +159,16 @@ if [[ "${strict_checks}" == "1" ]] && [[ "${test_state}" != "pass" && "${build_s
   exit 1
 fi
 
+if [[ "${strict_checks}" == "1" ]] && [[ "${test_state}" != "pass" ]]; then
+  if [[ "${allow_build_only_review}" == "1" && "${build_state}" == "pass" ]]; then
+    echo "[WARN] STRICT_LOCAL_CHECKS=1 but ALLOW_BUILD_ONLY_REVIEW=1 enabled; proceeding with build-only evidence."
+  else
+    echo "[ERROR] STRICT_LOCAL_CHECKS=1 requires a passing test script."
+    echo "[HINT] Set ALLOW_BUILD_ONLY_REVIEW=1 only for explicit temporary waiver."
+    exit 1
+  fi
+fi
+
 if [[ "${strict_checks}" != "1" ]]; then
   if [[ "${typecheck_state}" == "fail" ]]; then
     echo "[WARN] typecheck failed (non-strict mode)."
@@ -162,6 +178,20 @@ if [[ "${strict_checks}" != "1" ]]; then
 
   if [[ "${test_state}" != "pass" && "${build_state}" != "pass" ]]; then
     echo "[WARN] Neither test nor build passed (non-strict mode)."
+  fi
+fi
+
+if [[ "${round}" == "2" && "${typecheck_state}" != "pass" ]]; then
+  echo "[ERROR] Round 2 hard gate: typecheck must pass before requesting Gemini review."
+  exit 1
+fi
+
+if [[ "${round}" == "2" && "${test_state}" != "pass" ]]; then
+  if [[ "${allow_build_only_review}" == "1" && "${build_state}" == "pass" ]]; then
+    echo "[WARN] Round 2 hard gate override: ALLOW_BUILD_ONLY_REVIEW=1 with passing build."
+  else
+    echo "[ERROR] Round 2 hard gate: test must pass before requesting Gemini review."
+    exit 1
   fi
 fi
 

@@ -5,6 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 env_file="${ENV_FILE:-}"
+require_explicit_env_file="${REQUIRE_EXPLICIT_ENV_FILE:-0}"
+if [[ -z "${env_file}" ]] && [[ "${CI:-}" == "true" || "${require_explicit_env_file}" == "1" ]]; then
+  echo "[ERROR] ENV_FILE must be explicitly set in CI/production mode."
+  exit 1
+fi
 if [[ -z "${env_file}" ]]; then
   if [[ -f ".env.local" ]]; then
     env_file=".env.local"

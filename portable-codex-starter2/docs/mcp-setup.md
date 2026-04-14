@@ -54,6 +54,7 @@ VM_PREFLIGHT_STRICT=1 bash scripts/vm-ready-check.sh
 
 - `scripts/postgres-mcp.sh`, `scripts/vm-ready-check.sh`, `scripts/get-senior-review.sh`는 `ENV_FILE` 지정이 있으면 그 파일을 우선 로드하고, 없으면 `.env.local` → `.env` 순서로 로드한다.
 - tmux/새 셸에서도 같은 값을 유지하려면 VM 프로젝트 루트 `.env`를 사용한다.
+- CI/프로덕션에서는 `REQUIRE_EXPLICIT_ENV_FILE=1`(또는 `CI=true`)로 실행해 `ENV_FILE` 미지정 시 즉시 실패하도록 설정한다.
 
 ## Context7
 
@@ -101,6 +102,7 @@ node scripts/doctor.mjs --target /path/to/your-project
 - `test`가 없거나 실패하면 `build` pass를 대체 증거로 허용한다.
 - 테스트를 설정할 때는 watch 모드가 아닌 1회 실행 모드(`vitest run`, `jest --passWithNoTests`)를 사용한다.
 - 위 조건은 `STRICT_LOCAL_CHECKS=1`에서 강제되고, non-strict 모드에서는 경고로만 기록된다.
+- strict에서 `test`를 생략하려면 `ALLOW_BUILD_ONLY_REVIEW=1`을 명시적으로 설정해야 한다(임시 면책).
 
 ## 추천 설치 방식
 
