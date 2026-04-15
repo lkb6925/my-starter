@@ -29,6 +29,7 @@ OMX_UNAVAILABLE_LIMIT="${OMX_UNAVAILABLE_LIMIT:-3}"
 SUSPECTED_LOOP_LIMIT="${SUSPECTED_LOOP_LIMIT:-5}"
 WATCH_MAX_CYCLES="${WATCH_MAX_CYCLES:-0}"
 WATCH_LOG="${RUN_DIR}/watch-$(date -u +%Y%m%dT%H%M%SZ).log"
+ALERT_SNAPSHOT_FILE="${RUN_DIR}/latest-alert.json"
 
 mkdir -p "${RUN_DIR}"
 omx_unavailable_count=0
@@ -71,6 +72,63 @@ request_stop() {
 }
 
 trap request_stop INT TERM
+
+write_alert_snapshot() {
+  local status_json="$1"
+  local reason_text="$2"
+  local timestamp
+  timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  if command -v node >/dev/null 2>&1; then
+    node -e '
+      const fs = require("fs");
+      const outputPath = process.argv[1];
+      const cycle = Number(process.argv[2]);
+      const reason = process.argv[3];
+      const timestamp = process.argv[4];
+      let status = {};
+      try {
+        status = JSON.parse(fs.readFileSync(0, "utf8"));
+      } catch {
+        status = {};
+      }
+      const payload = {
+        schema_version: "1.0",
+        generated_at: timestamp,
+        cycle,
+        reason,
+        run_state: status.run_state ?? null,
+        session_exists: status.session_exists ?? null,
+        latest_log: status.latest_log ?? null,
+        log_age_seconds: status.log_age_seconds ?? null,
+        meta_age_seconds: status.meta_age_seconds ?? null,
+        omx_status: status.omx_status ?? null
+      };
+      fs.writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    ' "${ALERT_SNAPSHOT_FILE}" "${cycle_count}" "${reason_text}" "${timestamp}" <<< "${status_json}"
+    return 0
+  fi
+
+  if [[ "${JSON_QUERY_TOOL}" == "jq" ]]; then
+    jq -n \
+      --arg generated_at "${timestamp}" \
+      --arg reason "${reason_text}" \
+      --argjson cycle "${cycle_count}" \
+      --argjson status "${status_json}" \
+      '{
+        schema_version: "1.0",
+        generated_at: $generated_at,
+        cycle: $cycle,
+        reason: $reason,
+        run_state: $status.run_state,
+        session_exists: $status.session_exists,
+        latest_log: $status.latest_log,
+        log_age_seconds: $status.log_age_seconds,
+        meta_age_seconds: $status.meta_age_seconds,
+        omx_status: $status.omx_status
+      }' > "${ALERT_SNAPSHOT_FILE}"
+  fi
+}
 
 echo "[INFO] factory-watch started; events -> ${WATCH_LOG}" | tee -a "${WATCH_LOG}"
 if [[ "${ONCE_MODE}" == "1" ]]; then
@@ -152,6 +210,7 @@ while true; do
   if (( alert == 1 )); then
     ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "[WARN] ${ts} :: ${reason[*]}" | tee -a "${WATCH_LOG}"
+    write_alert_snapshot "${status_json}" "${reason[*]}"
     bash scripts/factory-status.sh | tee -a "${WATCH_LOG}"
   fi
 

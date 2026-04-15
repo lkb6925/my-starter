@@ -120,6 +120,7 @@ npm run factory:status
 ```
 
 기본적으로 `factory:night`는 `FACTORY_COMMAND_POLICY=strict`로 실행되어 `OMX_COMMAND`를 보수적으로 검증한다. bare `omx`는 자동으로 `--tmux --madmax --high`를 붙여 실행하며, 위험 플래그 패턴은 차단된다.
+장기적으로 더 구조화된 입력이 필요하면 `OMX_BIN` + `OMX_ARGS`를 사용할 수 있으며, 이 조합은 `OMX_COMMAND`보다 우선한다.
 
 감시(읽기 전용):
 
@@ -132,6 +133,7 @@ WATCH_MAX_CYCLES=10 bash scripts/factory-watch.sh
 ```
 
 `factory-watch`는 `jq`를 우선 사용하고, `jq`가 없으면 `node` 파서로 fallback한다.
+경고가 감지되면 `.omx/runs/latest-alert.json`에 최신 alert 스냅샷이 기록된다.
 
 아침 요약:
 

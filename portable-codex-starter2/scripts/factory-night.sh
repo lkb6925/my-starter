@@ -7,6 +7,8 @@ cd "${ROOT_DIR}"
 SESSION_NAME="${FACTORY_SESSION_NAME:-factory-night}"
 RUN_DIR="${FACTORY_RUN_DIR:-.omx/runs}"
 OMX_COMMAND="${OMX_COMMAND:-omx}"
+OMX_BIN="${OMX_BIN:-omx}"
+OMX_ARGS="${OMX_ARGS:-}"
 FACTORY_COMMAND_POLICY="${FACTORY_COMMAND_POLICY:-strict}"
 FACTORY_ALLOW_NON_OMX_COMMAND="${FACTORY_ALLOW_NON_OMX_COMMAND:-0}"
 FACTORY_OMX_DEFAULT_FLAGS="${FACTORY_OMX_DEFAULT_FLAGS:---tmux --madmax --high}"
@@ -25,9 +27,30 @@ if [[ "${OMX_COMMAND}" =~ [\;\&\|\<\>\`\$\\\(\)\{\}] ]]; then
 fi
 
 declare -a OMX_TOKENS=()
-read -r -a OMX_TOKENS <<< "${OMX_COMMAND}"
+OMX_INPUT_MODE="omx_command"
+
+if [[ -n "${OMX_ARGS}" ]]; then
+  if [[ "${OMX_BIN}" =~ [\;\&\|\<\>\`\$\\\(\)\{\}] ]]; then
+    echo "[ERROR] OMX_BIN contains unsafe shell metacharacters." >&2
+    exit 1
+  fi
+  if [[ "${OMX_ARGS}" =~ [\;\&\|\<\>\`\$\\\(\)\{\}] ]]; then
+    echo "[ERROR] OMX_ARGS contains unsafe shell metacharacters. Use plain argv style tokens only." >&2
+    exit 1
+  fi
+  if [[ "${OMX_COMMAND}" != "omx" ]]; then
+    echo "[WARN] OMX_ARGS is set, so OMX_COMMAND is ignored. (input preference: OMX_ARGS + OMX_BIN)"
+  fi
+  declare -a OMX_ARG_TOKENS=()
+  read -r -a OMX_ARG_TOKENS <<< "${OMX_ARGS}"
+  OMX_TOKENS=("${OMX_BIN}" "${OMX_ARG_TOKENS[@]}")
+  OMX_INPUT_MODE="omx_args"
+else
+  read -r -a OMX_TOKENS <<< "${OMX_COMMAND}"
+fi
+
 if [[ "${#OMX_TOKENS[@]}" -eq 0 ]]; then
-  echo "[ERROR] OMX_COMMAND is empty after tokenization." >&2
+  echo "[ERROR] OMX command input produced an empty token list." >&2
   exit 1
 fi
 
@@ -106,7 +129,10 @@ cat > "${META_FILE}" <<JSON
   "branch": "$(git branch --show-current 2>/dev/null || echo unknown)",
   "session_name": "${SESSION_NAME}",
   "run_log": "${RUN_LOG}",
+  "omx_input_mode": "${OMX_INPUT_MODE}",
   "omx_command_raw": "${OMX_COMMAND}",
+  "omx_bin": "${OMX_BIN}",
+  "omx_args_raw": "${OMX_ARGS}",
   "omx_command_effective": "${OMX_COMMAND_RENDERED}",
   "command_policy": "${FACTORY_COMMAND_POLICY}"
 }

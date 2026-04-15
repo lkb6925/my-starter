@@ -109,6 +109,7 @@ bash scripts/factory-summary.sh
 - `factory-watch.sh`는 `jq`를 우선 사용하고, 없으면 `node` JSON 파서 fallback을 사용한다.
 - `factory-watch.sh --once`로 1회 체크 후 종료할 수 있다.
 - `WATCH_MAX_CYCLES=<n>`을 주면 무한 루프 대신 n회 체크 후 종료한다.
+- alert 발생 시 `${FACTORY_RUN_DIR:-.omx/runs}/latest-alert.json` 스냅샷이 갱신되어 Hermes가 최신 경고 상태를 쉽게 소비할 수 있다.
 - `.env` 로딩은 기본적으로 기존 shell env를 보존한다. 필요한 경우에만 `CODEX_ENV_OVERRIDE=1`로 덮어쓴다.
 - `factory-night.sh`는 기본 `strict` 정책에서 `OMX_COMMAND`를 보수적으로 검증한다.
   - `omx` 단독 입력은 자동으로 `--tmux --madmax --high`가 붙는다.
@@ -116,4 +117,5 @@ bash scripts/factory-summary.sh
   - `--unsafe`, `--danger`, `--destructive`, `--no-sandbox` 패턴은 차단된다.
   - 비-`omx` 명령을 의도적으로 허용하려면 `FACTORY_ALLOW_NON_OMX_COMMAND=1`을 설정한다.
   - 정책을 완화하려면 `FACTORY_COMMAND_POLICY=permissive`를 명시한다.
+- `factory-night.sh`는 구조화 입력도 지원한다: `OMX_BIN` + `OMX_ARGS`를 주면 기존 `OMX_COMMAND`보다 우선한다.
 - 런 로그(`run-*.log`), 감시 로그(`watch-*.log`), launch 스크립트(`launch-*.sh`)는 7일 초과 시 정리된다.
