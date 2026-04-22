@@ -13,6 +13,7 @@ SESSION_NAME="${FACTORY_SESSION_NAME:-factory-night}"
 RUN_DIR="${FACTORY_RUN_DIR:-.omx/runs}"
 META_FILE="${RUN_DIR}/latest-run.json"
 LAST_ALERT_FILE="${RUN_DIR}/latest-alert.json"
+REQUIRE_REVIEW_FOR_POWEROFF="${REQUIRE_REVIEW_FOR_POWEROFF:-1}"
 
 json_field_from_file() {
   local file_path="$1"
@@ -106,6 +107,12 @@ last_alert_file=""
 if [[ -f "${LAST_ALERT_FILE}" ]]; then
   last_alert_file="${LAST_ALERT_FILE}"
 fi
+last_alert_severity=""
+last_alert_code=""
+if [[ -n "${last_alert_file}" ]]; then
+  last_alert_severity="$(json_field_from_file "${last_alert_file}" "severity")"
+  last_alert_code="$(json_field_from_file "${last_alert_file}" "alert_code")"
+fi
 
 meta_status=""
 if [[ -f "${META_FILE}" ]]; then
@@ -117,16 +124,29 @@ if [[ "${session_exists}" == "true" ]]; then
 elif [[ -n "${meta_status}" ]]; then
   run_state="${meta_status}"
 fi
+if [[ "${session_exists}" != "true" && "${run_state}" == "running" ]]; then
+  run_state="stalled"
+fi
 
 remaining_actions=()
-if [[ "${push_state}" != "pushed" ]]; then
-  remaining_actions+=("push")
+if [[ "${push_state}" == "needs_push" ]]; then
+  remaining_actions+=("push_commits")
+elif [[ "${push_state}" == "no_upstream" ]]; then
+  remaining_actions+=("set_upstream")
+elif [[ "${push_state}" == "behind_remote" ]]; then
+  remaining_actions+=("sync_with_remote")
+elif [[ "${push_state}" == "diverged" ]]; then
+  remaining_actions+=("resolve_divergence")
 fi
 if [[ "${dirty}" == "dirty" ]]; then
   remaining_actions+=("clean_working_tree")
 fi
-if [[ "${last_review_verdict}" != "approved" && "${last_review_verdict}" != "pass" ]]; then
-  remaining_actions+=("resolve_review")
+if [[ "${last_review_verdict}" == "unknown" ]]; then
+  if [[ "${REQUIRE_REVIEW_FOR_POWEROFF}" == "1" ]]; then
+    remaining_actions+=("run_senior_review")
+  fi
+elif [[ "${last_review_verdict}" != "approved" && "${last_review_verdict}" != "pass" ]]; then
+  remaining_actions+=("resolve_review_findings")
 fi
 if [[ "${session_exists}" == "true" ]]; then
   remaining_actions+=("stop_factory_session")
@@ -165,7 +185,7 @@ if [[ "${JSON_MODE}" == "1" ]]; then
   fi
   cat <<JSON
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "generated_at": "${generated_at}",
   "run_state": "${run_state}",
   "session_name": "${SESSION_NAME}",
@@ -181,6 +201,8 @@ if [[ "${JSON_MODE}" == "1" ]]; then
   "push_state": "${push_state}",
   "last_review_verdict": "${last_review_verdict}",
   "last_alert_file": "${last_alert_file}",
+  "last_alert_severity": "${last_alert_severity}",
+  "last_alert_code": "${last_alert_code}",
   "poweroff_ready": ${poweroff_ready},
   "remaining_manual_actions": ${remaining_actions_json}
 }
@@ -201,5 +223,7 @@ echo "  omx_status: ${omx_status}"
 echo "  push_state: ${push_state}"
 echo "  last_review_verdict: ${last_review_verdict}"
 echo "  last_alert_file: ${last_alert_file:-none}"
+echo "  last_alert_severity: ${last_alert_severity:-none}"
+echo "  last_alert_code: ${last_alert_code:-none}"
 echo "  poweroff_ready: ${poweroff_ready}"
 echo "  remaining_manual_actions: ${remaining_actions[*]:-none}"

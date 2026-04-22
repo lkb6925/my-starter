@@ -79,6 +79,12 @@ if [[ "${PUSH_ON_FINISH}" == "1" ]]; then
     fi
   elif [[ "${initial_push_state}" == "pushed" ]]; then
     push_result="already_pushed"
+  elif [[ "${initial_push_state}" == "no_upstream" ]]; then
+    push_result="no_upstream"
+  elif [[ "${initial_push_state}" == "behind_remote" ]]; then
+    push_result="behind_remote"
+  elif [[ "${initial_push_state}" == "diverged" ]]; then
+    push_result="diverged"
   else
     push_result="not_pushable"
   fi
@@ -109,7 +115,7 @@ elif [[ "${session_exists}" == "true" ]]; then
   finished_at_value="null"
 elif [[ "${push_state}" == "needs_push" || "${push_state}" == "no_upstream" || "${push_state}" == "diverged" || "${push_state}" == "behind_remote" ]]; then
   final_status_label="stalled"
-  final_phase="awaiting_push"
+  final_phase="awaiting_push_resolution"
 elif [[ "${last_review_verdict}" != "approved" && "${last_review_verdict}" != "pass" ]]; then
   final_status_label="stalled"
   final_phase="awaiting_review_resolution"

@@ -9,6 +9,7 @@ RUN_DIR="${FACTORY_RUN_DIR:-.omx/runs}"
 OMX_COMMAND="${OMX_COMMAND:-omx}"
 OMX_BIN="${OMX_BIN:-omx}"
 OMX_ARGS="${OMX_ARGS:-}"
+FACTORY_REQUIRE_STRUCTURED_INPUT="${FACTORY_REQUIRE_STRUCTURED_INPUT:-0}"
 FACTORY_COMMAND_POLICY="${FACTORY_COMMAND_POLICY:-strict}"
 FACTORY_ALLOW_NON_OMX_COMMAND="${FACTORY_ALLOW_NON_OMX_COMMAND:-0}"
 FACTORY_OMX_DEFAULT_FLAGS="${FACTORY_OMX_DEFAULT_FLAGS:---tmux --madmax --high}"
@@ -47,6 +48,10 @@ if [[ -n "${OMX_ARGS}" ]]; then
   OMX_INPUT_MODE="omx_args"
 else
   echo "[WARN] OMX_COMMAND is deprecated. Prefer OMX_BIN + OMX_ARGS for structured launch input."
+  if [[ "${FACTORY_REQUIRE_STRUCTURED_INPUT}" == "1" ]]; then
+    echo "[ERROR] FACTORY_REQUIRE_STRUCTURED_INPUT=1 requires OMX_ARGS to be set; OMX_COMMAND path is disabled." >&2
+    exit 1
+  fi
   read -r -a OMX_TOKENS <<< "${OMX_COMMAND}"
 fi
 

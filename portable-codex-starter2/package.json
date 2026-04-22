@@ -12,6 +12,7 @@
     "factory:status": "bash scripts/factory-status.sh",
     "factory:watch": "bash scripts/factory-watch.sh",
     "factory:summary": "bash scripts/factory-summary.sh",
-    "factory:finish": "bash scripts/factory-finish.sh"
+    "factory:finish": "bash scripts/factory-finish.sh",
+    "factory:self-check": "bash scripts/factory-self-check.sh"
   }
 }

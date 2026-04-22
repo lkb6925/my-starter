@@ -16,6 +16,7 @@
 - `scripts/factory-watch.sh`: 읽기 전용 감시/알림
 - `scripts/factory-summary.sh`: 아침 점검용 요약 리포트
 - `scripts/factory-finish.sh`: 최종 push/요약/종료 준비 상태 계산
+- `scripts/factory-self-check.sh`: 상태/알림 JSON 계약 확인
 - `scripts/run-local-checks.sh`: local verification 전용 분리 계층
 
 ## 권장 설치
@@ -80,6 +81,9 @@ bash scripts/factory-summary.sh
 
 # 마감 처리 (push + final summary + poweroff 준비 계산)
 bash scripts/factory-finish.sh
+
+# 하네스 계약 확인
+bash scripts/factory-self-check.sh
 ```
 
 ## 상태 JSON 스키마 (Hermes용)
@@ -102,6 +106,8 @@ bash scripts/factory-finish.sh
 - `push_state`
 - `last_review_verdict`
 - `last_alert_file`
+- `last_alert_severity`
+- `last_alert_code`
 - `poweroff_ready`
 - `remaining_manual_actions`
 
@@ -127,4 +133,5 @@ bash scripts/factory-finish.sh
   - 비-`omx` 명령을 의도적으로 허용하려면 `FACTORY_ALLOW_NON_OMX_COMMAND=1`을 설정한다.
   - 정책을 완화하려면 `FACTORY_COMMAND_POLICY=permissive`를 명시한다.
 - `factory-night.sh`는 구조화 입력도 지원한다: `OMX_BIN` + `OMX_ARGS`를 주면 기존 `OMX_COMMAND`보다 우선한다.
+- `FACTORY_REQUIRE_STRUCTURED_INPUT=1`을 주면 `OMX_COMMAND` 경로를 막고 구조화 입력만 허용한다.
 - 런 로그(`run-*.log`), 감시 로그(`watch-*.log`), launch 스크립트(`launch-*.sh`)는 7일 초과 시 정리된다.

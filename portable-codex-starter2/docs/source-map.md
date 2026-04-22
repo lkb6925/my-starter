@@ -28,6 +28,7 @@
 - `scripts/factory-watch.sh`
 - `scripts/factory-summary.sh`
 - `scripts/factory-finish.sh`
+- `scripts/factory-self-check.sh`
 
 ## 뺀 것
 

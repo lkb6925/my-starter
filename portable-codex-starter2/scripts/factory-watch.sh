@@ -30,6 +30,7 @@ SUSPECTED_LOOP_LIMIT="${SUSPECTED_LOOP_LIMIT:-5}"
 WATCH_MAX_CYCLES="${WATCH_MAX_CYCLES:-0}"
 WATCH_LOG="${RUN_DIR}/watch-$(date -u +%Y%m%dT%H%M%SZ).log"
 ALERT_SNAPSHOT_FILE="${RUN_DIR}/latest-alert.json"
+META_FILE="${RUN_DIR}/latest-run.json"
 
 mkdir -p "${RUN_DIR}"
 omx_unavailable_count=0
@@ -78,6 +79,7 @@ write_alert_snapshot() {
   local reason_text="$2"
   local severity="$3"
   local suggested_action="$4"
+  local alert_code="$5"
   local timestamp
   timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -89,7 +91,8 @@ write_alert_snapshot() {
       const reason = process.argv[3];
       const severity = process.argv[4];
       const suggestedAction = process.argv[5];
-      const timestamp = process.argv[6];
+      const alertCode = process.argv[6];
+      const timestamp = process.argv[7];
       let status = {};
       try {
         status = JSON.parse(fs.readFileSync(0, "utf8"));
@@ -102,6 +105,7 @@ write_alert_snapshot() {
         cycle,
         reason,
         severity,
+        alert_code: alertCode,
         suggested_action: suggestedAction,
         run_state: status.run_state ?? null,
         session_exists: status.session_exists ?? null,
@@ -111,7 +115,7 @@ write_alert_snapshot() {
         omx_status: status.omx_status ?? null
       };
       fs.writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-    ' "${ALERT_SNAPSHOT_FILE}" "${cycle_count}" "${reason_text}" "${severity}" "${suggested_action}" "${timestamp}" <<< "${status_json}"
+    ' "${ALERT_SNAPSHOT_FILE}" "${cycle_count}" "${reason_text}" "${severity}" "${suggested_action}" "${alert_code}" "${timestamp}" <<< "${status_json}"
     return 0
   fi
 
@@ -121,6 +125,7 @@ write_alert_snapshot() {
       --arg reason "${reason_text}" \
       --arg severity "${severity}" \
       --arg suggested_action "${suggested_action}" \
+      --arg alert_code "${alert_code}" \
       --argjson cycle "${cycle_count}" \
       --argjson status "${status_json}" \
       '{
@@ -129,6 +134,7 @@ write_alert_snapshot() {
         cycle: $cycle,
         reason: $reason,
         severity: $severity,
+        alert_code: $alert_code,
         suggested_action: $suggested_action,
         run_state: $status.run_state,
         session_exists: $status.session_exists,
@@ -138,6 +144,28 @@ write_alert_snapshot() {
         omx_status: $status.omx_status
       }' > "${ALERT_SNAPSHOT_FILE}"
   fi
+}
+
+update_run_state_on_alert() {
+  local next_status="$1"
+  local next_phase="$2"
+  if [[ ! -f "${META_FILE}" ]]; then
+    return 0
+  fi
+  node -e '
+    const fs = require("fs");
+    const filePath = process.argv[1];
+    const status = process.argv[2];
+    const phase = process.argv[3];
+    try {
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      parsed.status = status;
+      parsed.phase = phase;
+      fs.writeFileSync(filePath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+    } catch {
+      process.exit(0);
+    }
+  ' "${META_FILE}" "${next_status}" "${next_phase}"
 }
 
 echo "[INFO] factory-watch started; events -> ${WATCH_LOG}" | tee -a "${WATCH_LOG}"
@@ -220,23 +248,35 @@ while true; do
   if (( alert == 1 )); then
     severity="medium"
     suggested_action="inspect_factory_status"
+    alert_code="factory_alert_generic"
+    next_run_status="stalled"
+    next_run_phase="alert_detected"
     if [[ "${reason[*]}" == *"tmux session missing"* ]]; then
       severity="high"
+      alert_code="factory_session_missing"
       suggested_action="restart_factory_night_session"
+      next_run_phase="session_missing"
     elif [[ "${reason[*]}" == *"omx status unavailable"* ]]; then
       severity="high"
+      alert_code="factory_omx_unavailable"
       suggested_action="verify_omx_runtime_and_credentials"
+      next_run_phase="omx_unavailable"
     elif [[ "${reason[*]}" == *"run log stale"* || "${reason[*]}" == *"run metadata stale"* ]]; then
       severity="medium"
+      alert_code="factory_stale_activity"
       suggested_action="check_run_log_and_consider_restart"
+      next_run_phase="stale_activity"
     elif [[ "${reason[*]}" == *"suspected_loop"* ]]; then
       severity="medium"
+      alert_code="factory_suspected_loop"
       suggested_action="inspect_review_artifacts_and_adjust_workflow"
+      next_run_phase="suspected_loop"
     fi
 
     ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "[WARN] ${ts} :: ${reason[*]} (severity=${severity})" | tee -a "${WATCH_LOG}"
-    write_alert_snapshot "${status_json}" "${reason[*]}" "${severity}" "${suggested_action}"
+    write_alert_snapshot "${status_json}" "${reason[*]}" "${severity}" "${suggested_action}" "${alert_code}"
+    update_run_state_on_alert "${next_run_status}" "${next_run_phase}"
     bash scripts/factory-status.sh | tee -a "${WATCH_LOG}"
   fi
 
