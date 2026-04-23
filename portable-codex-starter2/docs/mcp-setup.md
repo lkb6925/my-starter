@@ -43,7 +43,7 @@ args = ["scripts/postgres-mcp.sh"]
 
 ### 참고: 로컬 포장/배포 준비 중일 때
 
-- `GEMINI_API_KEY`는 VM 셸 환경이나 `~/.hermes/.env`에서 읽어온다. 따라서 VM에 이미 키를 넣어두었다면 `scripts/vm-ready-check.sh`와 senior review가 그대로 그 값을 쓸 수 있다.
+- `GEMINI_API_KEY`는 VM 셸 환경이나 `~/.hermes/.env`에서 읽어온다. senior review는 기본적으로 Gemini API key만 사용하며 `GEMINI_REVIEWER_BACKEND=api`가 기본값이다. `GOOGLE_API_KEY`나 `AI_API_KEY`가 들어 있어도 하네스가 같은 리뷰어 키로 정규화한다. 따라서 VM에 이미 키를 넣어두었다면 `scripts/vm-ready-check.sh`와 senior review가 그대로 그 값을 쓸 수 있다.
 - `HERMES_ENV_FILE`를 따로 지정하면 `~/.hermes/.env` 대신 그 파일을 사용한다.
 - DSN은 파일 치환 대신 `POSTGRES_MCP_DSN` 환경 변수로만 주입한다.
 - 위 두 항목까지 실패로 강제하려면 아래처럼 strict 모드를 사용한다.

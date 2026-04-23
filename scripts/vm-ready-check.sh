@@ -29,14 +29,14 @@ require_cmd npm || status=1
 require_cmd bash || status=1
 require_cmd tmux || status=1
 
-if [[ -n "${GEMINI_API_KEY:-}" ]]; then
-  echo "[PASS] GEMINI_API_KEY is set"
+if [[ -n "${GEMINI_API_KEY:-}" || -n "${GOOGLE_API_KEY:-}" || -n "${AI_API_KEY:-}" ]]; then
+  echo "[PASS] Gemini API key is available (GEMINI_API_KEY/GOOGLE_API_KEY/AI_API_KEY alias)"
 else
   if [[ "${require_gemini}" == "1" ]]; then
-    echo "[FAIL] GEMINI_API_KEY is missing (FACTORY_REQUIRE_GEMINI_API_KEY=1)"
+    echo "[FAIL] Gemini API key is missing (FACTORY_REQUIRE_GEMINI_API_KEY=1)"
     status=1
   else
-    echo "[INFO] GEMINI_API_KEY is not set in this shell; senior-review is optional unless FACTORY_REQUIRE_GEMINI_API_KEY=1."
+    echo "[INFO] Gemini API key is not set in this shell; senior-review is optional unless FACTORY_REQUIRE_GEMINI_API_KEY=1"
   fi
 fi
 

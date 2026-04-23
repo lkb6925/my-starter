@@ -8,6 +8,8 @@ cd "${ROOT_DIR}"
 source "${ROOT_DIR}/scripts/lib/load-env.sh"
 codex_load_env
 
+export GEMINI_REVIEWER_BACKEND="${GEMINI_REVIEWER_BACKEND:-api}"
+
 round_arg="${1:-}"
 round="${round_arg:-${SENIOR_REVIEW_ROUND:-1}}"
 if [[ ! "${round}" =~ ^[12]$ ]]; then

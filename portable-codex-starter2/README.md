@@ -29,7 +29,7 @@
 
 - **Codex CLI**: 실제 코드 작성/수정 실행자
 - **OMX**: 장기 실행 런타임/워크플로우 계층
-- **Gemini reviewer**: 커밋 전 적대적 리뷰어
+- **Gemini reviewer**: Gemini API key 기반 커밋 전 적대적 리뷰어
 - **Hermes**: 상태/감시 스크립트를 읽는 외부 운영자(필수 아님)
 
 ## 가장 빠른 시작
@@ -119,7 +119,7 @@ npm run factory:status
 기본적으로 `factory:night`는 `FACTORY_COMMAND_POLICY=strict`로 실행되어 `OMX_COMMAND`를 보수적으로 검증한다. bare `omx`는 자동으로 `--tmux --madmax --high`를 붙여 실행하며, 위험 플래그 패턴은 차단된다.
 장기적으로 더 구조화된 입력이 필요하면 `OMX_BIN` + `OMX_ARGS`를 사용할 수 있으며, 이 조합은 `OMX_COMMAND`보다 우선한다.
 (`OMX_COMMAND`는 호환성 때문에 남아 있지만 deprecated 경고를 출력한다.)
-`GEMINI_API_KEY`는 VM 셸 환경이나 `~/.hermes/.env`에서 읽어온다. 따라서 VM에 이미 키를 넣어두었다면 `npm run vm:preflight`와 senior review가 그대로 그 값을 쓸 수 있다.
+`GEMINI_API_KEY`는 VM 셸 환경이나 `~/.hermes/.env`에서 읽어온다. senior review는 기본적으로 Gemini API key만 사용하며 `GEMINI_REVIEWER_BACKEND=api`가 기본값이다. `GOOGLE_API_KEY`나 `AI_API_KEY`가 들어 있어도 하네스가 같은 리뷰어 키로 정규화한다. 따라서 VM에 이미 키를 넣어두었다면 `npm run vm:preflight`와 senior review가 그대로 그 값을 쓸 수 있다.
 완전 차단 모드가 필요하면 `FACTORY_REQUIRE_STRUCTURED_INPUT=1`을 설정하면 된다.
 
 감시(읽기 전용):

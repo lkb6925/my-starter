@@ -1,6 +1,6 @@
 ---
 name: senior-review
-description: Run the Gemini senior review script, read the feedback, and fix the code directly. Repeat up to 2 times maximum before committing.
+description: Run the Gemini API senior review script, read the feedback, and fix the code directly. Repeat up to 2 times maximum before committing.
 ---
 
 # Senior Review Protocol

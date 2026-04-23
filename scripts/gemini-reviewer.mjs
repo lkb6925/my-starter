@@ -3,8 +3,9 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.AI_API_KEY || "";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_REVIEWER_BACKEND = process.env.GEMINI_REVIEWER_BACKEND || "api";
 const GEMINI_DIFF_MODE = process.env.GEMINI_DIFF_MODE || "cached";
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || "45000");
 const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS || "2048");
@@ -17,6 +18,13 @@ const MAX_LOCAL_CHECKS_CHARS = Number(process.env.GEMINI_MAX_LOCAL_CHECKS_CHARS 
 
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is not set. Please export it.");
+  process.exit(1);
+}
+
+if (GEMINI_REVIEWER_BACKEND !== "api") {
+  console.error(
+    `GEMINI_REVIEWER_BACKEND=${GEMINI_REVIEWER_BACKEND} is unsupported. This starter uses the Gemini API review path only.`,
+  );
   process.exit(1);
 }
 

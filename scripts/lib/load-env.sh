@@ -114,9 +114,15 @@ codex_load_env() {
   if [[ -z "${GEMINI_API_KEY:-}" && -n "${GOOGLE_API_KEY:-}" ]]; then
     export GEMINI_API_KEY="${GOOGLE_API_KEY}"
     echo "[INFO] Mirrored GOOGLE_API_KEY into GEMINI_API_KEY for Gemini senior-review compatibility."
+  elif [[ -z "${GEMINI_API_KEY:-}" && -n "${AI_API_KEY:-}" ]]; then
+    export GEMINI_API_KEY="${AI_API_KEY}"
+    echo "[INFO] Mirrored AI_API_KEY into GEMINI_API_KEY for Gemini senior-review compatibility."
   elif [[ -z "${GOOGLE_API_KEY:-}" && -n "${GEMINI_API_KEY:-}" ]]; then
     export GOOGLE_API_KEY="${GEMINI_API_KEY}"
     echo "[INFO] Mirrored GEMINI_API_KEY into GOOGLE_API_KEY for Gemini compatibility."
+  elif [[ -z "${AI_API_KEY:-}" && -n "${GEMINI_API_KEY:-}" ]]; then
+    export AI_API_KEY="${GEMINI_API_KEY}"
+    echo "[INFO] Mirrored GEMINI_API_KEY into AI_API_KEY for Gemini compatibility."
   fi
 
   return 0
