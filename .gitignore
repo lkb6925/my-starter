@@ -4,7 +4,6 @@ node_modules/
 # Local editor / agent artifacts
 .claude/
 .claire/
-.codex/
 !portable-codex-starter/.codex/
 !portable-codex-starter/.codex/**
 !portable-codex-starter2/.codex/
@@ -12,3 +11,20 @@ node_modules/
 
 # Starter-local runtime logs
 portable-codex-starter/.github/hooks/logs/
+
+# portable-codex-starter2
+.env
+.env.local
+.tmp-gemini-review.json
+.tmp-gemini-review-round*.json
+.tmp-gemini-review-round*.json.tmp
+.tmp-local-checks-round*.log
+.tmp-local-checks-round*.summary.json
+.tmp-test-output-round*.txt
+.harness.lock
+.harness.lock.d
+.codex.backup.*
+.omx/runs/
+.omx/logs/
+.omx/state/
+.omx/metrics.json

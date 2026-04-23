@@ -16,6 +16,7 @@
 - `.codex/agents/`에 핵심 4인방만 유지
 - `.agents/skills/`로 반복 절차 고정
 - `.omx/checkpoints/`로 체크포인트 복구 지점 제공
+- 설치는 `.omx/checkpoints/`만 옮기고 `.omx/state`, `.omx/logs`, `.omx/runs`는 VM 로컬에 남긴다.
 - `.devcontainer/`는 필요할 때만 쓰는 보조 파일
 - `.codex/config.toml`로 MCP 기본값 제공
 
