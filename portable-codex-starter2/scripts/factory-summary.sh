@@ -5,118 +5,84 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 RUN_DIR="${FACTORY_RUN_DIR:-.omx/runs}"
-latest_run_meta="${RUN_DIR}/latest-run.json"
-latest_shutdown="${RUN_DIR}/latest-shutdown.json"
-latest_checks="$(ls -1t .tmp-local-checks-round*.summary.json 2>/dev/null | head -n 1 || true)"
-latest_review="$(ls -1t .tmp-gemini-review-round*.json 2>/dev/null | head -n 1 || true)"
-latest_log="$(ls -1t "${RUN_DIR}"/run-*.log 2>/dev/null | head -n 1 || true)"
-jq_available=0
-if command -v jq >/dev/null 2>&1; then
-  jq_available=1
-fi
+LATEST_RUN_META="${RUN_DIR}/latest-run.json"
+LATEST_SHUTDOWN="${RUN_DIR}/latest-shutdown.json"
+LATEST_CHECKS="$(ls -1t .tmp-local-checks-round*.summary.json 2>/dev/null | head -n 1 || true)"
+LATEST_REVIEW="$(ls -1t .tmp-gemini-review-round*.json 2>/dev/null | head -n 1 || true)"
+LATEST_LOG="$(ls -1t "${RUN_DIR}"/run-*.log 2>/dev/null | head -n 1 || true)"
+VERBOSE="${FACTORY_SUMMARY_VERBOSE:-0}"
+JQ_AVAILABLE=0
+command -v jq >/dev/null 2>&1 && JQ_AVAILABLE=1
 
 branch="$(git branch --show-current 2>/dev/null || echo unknown)"
 commit="$(git log --oneline -n 1 2>/dev/null | head -n 1)"
 state="clean"
 [[ -n "$(git status --short 2>/dev/null)" ]] && state="dirty"
 
-echo "# Factory Summary"
-echo ""
-echo "- Branch: ${branch}"
-echo "- Commit: ${commit}"
-echo "- Working tree: ${state}"
+json_field() {
+  local file_path="$1"
+  local field_name="$2"
+  if [[ ! -f "${file_path}" || "${JQ_AVAILABLE}" != "1" ]]; then
+    printf ''
+    return
+  fi
+  jq -r --arg field "${field_name}" 'if has($field) and .[$field] != null then .[$field] else "" end' "${file_path}" 2>/dev/null || true
+}
 
-if [[ -n "${latest_checks}" ]]; then
-  echo "- Latest checks: ${latest_checks}"
-  if [[ "${jq_available}" == "1" && -f "${latest_checks}" ]]; then
-    if jq -e . "${latest_checks}" >/dev/null 2>&1; then
-      echo "  - lint: $(jq -r '.lint // "unknown"' "${latest_checks}")"
-      echo "  - typecheck: $(jq -r '.typecheck // "unknown"' "${latest_checks}")"
-      echo "  - test: $(jq -r '.test // "unknown"' "${latest_checks}")"
-      echo "  - build: $(jq -r '.build // "unknown"' "${latest_checks}")"
-    else
-      echo "  - [warn] checks summary JSON is malformed; raw file retained."
-    fi
+checks_line="lint=unknown typecheck=unknown test=unknown build=unknown"
+if [[ -n "${LATEST_CHECKS}" && "${JQ_AVAILABLE}" == "1" ]]; then
+  if jq -e . "${LATEST_CHECKS}" >/dev/null 2>&1; then
+    checks_line="lint=$(jq -r '.lint // "unknown"' "${LATEST_CHECKS}") typecheck=$(jq -r '.typecheck // "unknown"' "${LATEST_CHECKS}") test=$(jq -r '.test // "unknown"' "${LATEST_CHECKS}") build=$(jq -r '.build // "unknown"' "${LATEST_CHECKS}")"
   else
-    echo "  - [warn] jq missing or checks summary file unavailable; skipping structured checks summary."
+    checks_line="invalid-json"
+  fi
+elif [[ -z "${LATEST_CHECKS}" ]]; then
+  checks_line="none"
+fi
+
+review_line="verdict=none issues=0"
+if [[ -n "${LATEST_REVIEW}" && "${JQ_AVAILABLE}" == "1" ]]; then
+  if jq -e . "${LATEST_REVIEW}" >/dev/null 2>&1; then
+    review_line="verdict=$(jq -r '.verdict // "unknown"' "${LATEST_REVIEW}") issues=$(jq -r '(.issues // []) | length' "${LATEST_REVIEW}")"
+  else
+    review_line="invalid-json"
+  fi
+fi
+
+run_status="$(json_field "${LATEST_RUN_META}" status)"
+run_phase="$(json_field "${LATEST_RUN_META}" phase)"
+run_mode="$(json_field "${LATEST_RUN_META}" execution_mode)"
+run_team="$(json_field "${LATEST_RUN_META}" team_name)"
+run_team_hint="$(json_field "${LATEST_RUN_META}" team_name_hint)"
+run_last_event="$(json_field "${LATEST_RUN_META}" last_event)"
+run_last_update_at="$(json_field "${LATEST_RUN_META}" last_update_at)"
+shutdown_result="$(json_field "${LATEST_SHUTDOWN}" result)"
+shutdown_requested_at="$(json_field "${LATEST_SHUTDOWN}" requested_at)"
+shutdown_finished_at="$(json_field "${LATEST_SHUTDOWN}" finished_at)"
+shutdown_log="$(json_field "${LATEST_SHUTDOWN}" log_file)"
+
+if [[ -z "${run_team}" ]]; then
+  run_team="${run_team_hint}"
+fi
+
+printf '# Factory Summary\n'
+printf '\n'
+printf -- '- branch: %s\n' "${branch}"
+printf -- '- commit: %s\n' "${commit}"
+printf -- '- tree: %s\n' "${state}"
+printf -- '- checks: %s\n' "${checks_line}"
+printf -- '- review: %s\n' "${review_line}"
+printf -- '- run: status=%s phase=%s mode=%s team=%s last_event=%s last_update_at=%s\n' \
+  "${run_status:-unknown}" "${run_phase:-unknown}" "${run_mode:-unknown}" "${run_team:-unknown}" "${run_last_event:-unknown}" "${run_last_update_at:-unknown}"
+printf -- '- shutdown: result=%s requested_at=%s finished_at=%s log=%s\n' \
+  "${shutdown_result:-none}" "${shutdown_requested_at:-none}" "${shutdown_finished_at:-none}" "${shutdown_log:-none}"
+
+if [[ -n "${LATEST_LOG}" ]]; then
+  printf -- '- log: %s\n' "${LATEST_LOG}"
+  if [[ "${VERBOSE}" == "1" && -f "${LATEST_LOG}" ]]; then
+    printf '\n## log tail (%s)\n' "${LATEST_LOG}"
+    tail -n 20 "${LATEST_LOG}"
   fi
 else
-  echo "- Latest checks: none"
-fi
-
-if [[ -n "${latest_review}" ]]; then
-  echo "- Latest review: ${latest_review}"
-  if [[ "${jq_available}" == "1" && -f "${latest_review}" ]]; then
-    if jq -e . "${latest_review}" >/dev/null 2>&1; then
-      echo "  - verdict: $(jq -r '.verdict // \"unknown\"' "${latest_review}")"
-      echo "  - issue_count: $(jq -r '(.issues // []) | length' "${latest_review}")"
-    else
-      echo "  - [warn] review JSON is malformed; raw file retained."
-    fi
-  else
-    echo "  - [warn] jq missing or review file unavailable; skipping structured review summary."
-  fi
-else
-  echo "- Latest review: none"
-fi
-
-meta_last_update_at=""
-meta_last_event=""
-meta_execution_mode=""
-meta_team_spec=""
-meta_team_name_hint=""
-meta_team_name=""
-meta_team_shutdown_result=""
-meta_team_shutdown_requested_at=""
-meta_team_shutdown_finished_at=""
-meta_team_shutdown_log=""
-if [[ -f "${latest_run_meta}" && "${jq_available}" == "1" ]]; then
-  meta_last_update_at="$(jq -r '.last_update_at // ""' "${latest_run_meta}")"
-  meta_last_event="$(jq -r '.last_event // ""' "${latest_run_meta}")"
-  meta_execution_mode="$(jq -r '.execution_mode // ""' "${latest_run_meta}")"
-  meta_team_spec="$(jq -r '.team_spec // ""' "${latest_run_meta}")"
-  meta_team_name_hint="$(jq -r '.team_name_hint // ""' "${latest_run_meta}")"
-  meta_team_name="$(jq -r '.team_name // ""' "${latest_run_meta}")"
-fi
-if [[ -f "${latest_shutdown}" && "${jq_available}" == "1" ]]; then
-  meta_team_shutdown_result="$(jq -r '.result // ""' "${latest_shutdown}")"
-  meta_team_shutdown_requested_at="$(jq -r '.requested_at // ""' "${latest_shutdown}")"
-  meta_team_shutdown_finished_at="$(jq -r '.finished_at // ""' "${latest_shutdown}")"
-  meta_team_shutdown_log="$(jq -r '.log_file // ""' "${latest_shutdown}")"
-fi
-
-if [[ -n "${meta_last_update_at}" || -n "${meta_last_event}" ]]; then
-  echo "- Run manifest last_update_at: ${meta_last_update_at:-unknown}"
-  echo "- Run manifest last_event: ${meta_last_event:-unknown}"
-fi
-if [[ -n "${meta_execution_mode}" || -n "${meta_team_spec}" || -n "${meta_team_name_hint}" || -n "${meta_team_name}" ]]; then
-  echo "- Run manifest execution_mode: ${meta_execution_mode:-unknown}"
-  echo "- Run manifest team_spec: ${meta_team_spec:-unknown}"
-  echo "- Run manifest team_name_hint: ${meta_team_name_hint:-unknown}"
-  echo "- Run manifest team_name: ${meta_team_name:-unknown}"
-fi
-if [[ -n "${meta_team_shutdown_result}" || -n "${meta_team_shutdown_requested_at}" || -n "${meta_team_shutdown_finished_at}" ]]; then
-  echo "- Team shutdown result: ${meta_team_shutdown_result:-unknown}"
-  echo "- Team shutdown requested_at: ${meta_team_shutdown_requested_at:-unknown}"
-  echo "- Team shutdown finished_at: ${meta_team_shutdown_finished_at:-unknown}"
-  echo "- Team shutdown log: ${meta_team_shutdown_log:-unknown}"
-fi
-
-if [[ -n "${latest_log}" ]]; then
-  echo ""
-  echo "## Run log tail (${latest_log})"
-  if [[ -f "${latest_log}" ]]; then
-    tail -n 40 "${latest_log}"
-  else
-    echo "[warn] run log file is missing."
-  fi
-else
-  echo ""
-  echo "## Run log tail"
-  echo "[info] no run logs found in ${RUN_DIR}."
-fi
-
-if [[ "${jq_available}" != "1" ]]; then
-  echo ""
-  echo "[warn] jq not found; structured JSON fields could not be parsed."
+  printf -- '- log: none\n'
 fi
