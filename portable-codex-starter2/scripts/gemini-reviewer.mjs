@@ -294,24 +294,37 @@ async function callOpenRouter() {
 }
 
 let rawText;
+let reviewerSource = "gemini";
 try {
   rawText = await callGemini();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   const status = typeof error?.status === "number" ? error.status : null;
-  if (status === 429 || status === 503) {
-    console.error(`Gemini unavailable (${status}); falling back to OpenRouter reviewer...`);
+  const geminiKeyProblem = /API_KEY_INVALID|API key expired|API key not valid|invalid api key/i.test(message);
+  const transientGeminiProblem = status === 429 || status === 503;
+  const canUseOpenRouterFallback = Boolean(openRouterApiKey) && (geminiKeyProblem || transientGeminiProblem);
+
+  if (canUseOpenRouterFallback) {
+    const reason = geminiKeyProblem ? "Gemini API key rejected" : `Gemini unavailable (${status})`;
+    console.error(`${reason}; falling back to OpenRouter reviewer...`);
     try {
       rawText = await callOpenRouter();
+      reviewerSource = "openrouter-fallback";
     } catch (fallbackError) {
       const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-      console.error(`OpenRouter reviewer failed; using local fallback review. ${fallbackMessage}`);
-      rawText = JSON.stringify({
-        verdict: "pass",
-        issues: [],
-        source: "local-fallback",
-        notes: ["External reviewer unavailable; passed by local fallback after strong local checks."],
-      });
+      if (transientGeminiProblem) {
+        console.error(`OpenRouter reviewer failed; using local fallback review. ${fallbackMessage}`);
+        rawText = JSON.stringify({
+          verdict: "pass",
+          issues: [],
+          source: "local-fallback",
+          notes: ["External reviewer unavailable; passed by local fallback after strong local checks."],
+        });
+        reviewerSource = "local-fallback";
+      } else {
+        console.error(`OpenRouter reviewer failed after Gemini key rejection: ${fallbackMessage}`);
+        process.exit(1);
+      }
     }
   } else {
     console.error(`Gemini request failed: ${message}`);
@@ -326,6 +339,9 @@ try {
   if (!validateResultShape(parsed)) {
     console.error("Reviewer JSON response has invalid shape.", jsonCandidate);
     process.exit(1);
+  }
+  if (!parsed.source) {
+    parsed.source = reviewerSource;
   }
   console.log(JSON.stringify(parsed, null, 2));
 } catch {
